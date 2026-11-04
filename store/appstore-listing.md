@@ -5,7 +5,7 @@
 **Promotional text** (170 max, 103 used):
 Pick your masjid, see today's iqamah times, and get a reminder before every prayer. No account, no ads.
 
-**Keywords** (100 max, 94 used): iqama,iqamah,prayer times,salah,masjid,mosque,namaz,adhan,azan,reminder,muslim,fajr,isha,jumuah
+**Keywords** (100 max, 95 used): iqama,iqamah,prayer times,salah,masjid,mosque,namaz,adhan,azan,reminder,muslim,fajr,isha,jumuah
 
 **Description** (4000 max):
 

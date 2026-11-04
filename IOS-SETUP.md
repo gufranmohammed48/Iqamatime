@@ -49,3 +49,14 @@ After the upload finishes processing (about 10-30 minutes), the build appears un
 ## Notes
 - iPhones allow only 64 scheduled notifications, so the app schedules the nearest 60 (about 12 days) and refreshes the list every time it is opened.
 - To update later: change the code, `git pull`, `npm run sync`, raise the **Build** number in Xcode (General tab), archive and upload again.
+
+## Already verified for you
+A cloud Mac build ("iPhone build check" in GitHub Actions) compiles this project for the iPhone simulator and confirms the built app contains the adhan sound, the privacy manifest and the name "Iqama Time". The app is iPhone-only, uses the branded launch screen, and has the app icon in place. What is left needs your Apple account: signing, upload, and App Store Connect.
+
+## Checklist for the day you have your Apple membership
+1. Sign in to Xcode: Xcode, Settings, Accounts, add your Apple ID.
+2. Do steps 1 to 3 above (clone, open, pick your Team, Run in the simulator).
+3. Take 4 to 6 simulator screenshots (step 4).
+4. Archive and upload (step 5).
+5. In App Store Connect, paste the text from `store/appstore-listing.md` (step 6).
+6. Add yourself in TestFlight and test on an iPhone (step 7), then Submit for Review.
