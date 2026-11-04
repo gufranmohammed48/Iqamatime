@@ -13,6 +13,7 @@
   if (!LN) return;
 
   const DAYS_AHEAD = 14;
+  const IOS_MAX_PENDING = 60; // iOS limit is 64; stay under it
   const CHANNEL = "iqamah-reminders";
   const ADHAN_CHANNEL = "iqamah-reminders-adhan";
 
@@ -79,6 +80,12 @@
           schedule: { at: new Date(at), allowWhileIdle: true },
         });
       });
+    }
+    // iPhones keep only 64 pending local notifications and silently drop the rest, so keep the
+    // soonest ones. The app reschedules every time it opens, so the window keeps moving forward.
+    if (cap.getPlatform && cap.getPlatform() === "ios") {
+      list.sort((a, b) => a.schedule.at - b.schedule.at);
+      list.length = Math.min(list.length, IOS_MAX_PENDING);
     }
     if (list.length) await LN.schedule({ notifications: list });
   }
