@@ -1,6 +1,6 @@
 {
-    "name":  "Iqamah Times",
-    "short_name":  "Iqamah",
+    "name":  "Iqama Time",
+    "short_name":  "Iqama Time",
     "description":  "Daily iqamah times for your masjid, with reminders",
     "start_url":  "./",
     "scope":  "./",

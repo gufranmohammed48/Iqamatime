@@ -1,12 +1,12 @@
 # Play Store listing (copy into Play Console)
 
-**App name** (30 max): Iqamah Times
+**App name** (30 max): Iqama Time
 
 **Short description** (80 max):
 Masjid iqamah times, prayer reminders and adhan. Pick your masjid and go.
 
 **Full description** (4000 max):
-Never miss the congregation prayer. Iqamah Times shows today's iqamah times for your masjid, counts down to the next prayer and reminds you before it is time to leave.
+Never miss the congregation prayer. Iqama Time shows today's iqamah times for your masjid, counts down to the next prayer and reminds you before it is time to leave.
 
 * Choose your masjid from a searchable list
 * Today's iqamah times for Fajr, Zuhr, Asr, Maghrib, Isha and Jumu'ah, plus the next 7 days

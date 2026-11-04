@@ -48,7 +48,7 @@
     MASJID = m;
     try { localStorage.setItem(MASJID_KEY, m.id); } catch (e) {}
     lastDayKey = ""; lastNextKey = ""; lastRemindLine = "";
-    document.title = `${m.name} – Iqamah Times`;
+    document.title = `${m.name} – Iqama Time`;
     tick();
     if (window.onMasjidChanged) window.onMasjidChanged();
   }
