@@ -143,6 +143,8 @@
     @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .done { color: var(--gold); } }
     :root[data-theme="dark"] .done { color: var(--gold); }
     .sheet-label { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .1em; color: var(--muted); margin: 22px 4px -6px; }
+    .linkrow { display: flex; justify-content: space-between; align-items: center; padding: 4px 0; font-size: 16px; font-weight: 600; color: var(--ink); text-decoration: none; }
+    .linkrow span:last-child { font-size: 22px; color: var(--muted); }
     .cur-masjid { font-size: 18px; font-weight: 700; }
     .cur-city { font-size: 13px; color: var(--muted); margin: 2px 0 12px; }
     .group { background: var(--card); border-radius: 14px; padding: 14px 16px; margin-top: 14px; }
@@ -264,6 +266,13 @@
         <div class="seg" id="themeSeg">
           <button data-v="auto">Auto</button><button data-v="light">Light</button><button data-v="dark">Dark</button>
         </div>
+      </div>
+
+      <div class="sheet-label">About</div>
+      <div class="group">
+        <a class="linkrow" id="privacyLink" href="https://gufranmohammed48.github.io/Iqamatime/privacy.html" target="_blank" rel="noopener">
+          <span>Privacy policy</span><span aria-hidden="true">&rsaquo;</span>
+        </a>
       </div>
     </div>
   </div>
