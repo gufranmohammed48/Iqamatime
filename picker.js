@@ -132,6 +132,14 @@
     try { id = localStorage.getItem(MASJID_KEY); } catch (e) {}
     if (id) await loadMasjid(id);
     if (!MASJID) { await loadList(); openPicker(); }
-    else loadList(); // keep the list fresh for the next time the picker opens
+    else {
+      await loadList(); // keep the list fresh for the next time the picker opens
+      // The saved masjid was removed from the list (for example a test entry): ask the user to pick again
+      if (masjidList.length && !masjidList.some((m) => m.id === MASJID.id)) {
+        try { localStorage.removeItem(MASJID_KEY); } catch (e) {}
+        MASJID = null;
+        openPicker();
+      }
+    }
   })();
 })();
