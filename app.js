@@ -49,22 +49,32 @@ function findNext(now) {
   return { idx: -1, item: { key: "fajr", name: "Fajr (tomorrow)", mins: tFajr }, secsLeft: 86400 - now.secs + tFajr * 60 };
 }
 
+// "Jumada al-Ula 12, 1448 AH" for a calendar date ("" if the browser lacks the Islamic calendar).
+// Built from parts so the era shows as "AH" (Hijri), never "BC"/"BCE".
+function hijriLabel(y, m, d) {
+  try {
+    const h = {};
+    new Intl.DateTimeFormat("en-u-ca-islamic-umalqura", { day: "numeric", month: "numeric", year: "numeric", timeZone: "UTC" })
+      .formatToParts(new Date(Date.UTC(y, m - 1, d, 12))).forEach((x) => (h[x.type] = x.value));
+    const MONTHS = ["Muharram", "Safar", "Rabi al-Awwal", "Rabi al-Thani", "Jumada al-Ula", "Jumada al-Akhirah",
+      "Rajab", "Sha'ban", "Ramadan", "Shawwal", "Dhul Qa'dah", "Dhul Hijjah"];
+    return `${MONTHS[Number(h.month) - 1]} ${h.day}, ${h.year} AH`;
+  } catch (e) { return ""; }
+}
+
 function renderStatic(now) {
-  document.getElementById("masjid").textContent = `${MASJID.name} · ${MASJID.city}  ▾`;
+  // Name on the first line; the street address (a Google Maps link) underneath when the masjid has one
+  const addr = MASJID.address && MASJID.address !== MASJID.city ? MASJID.address : "";
+  document.getElementById("masjid").textContent = addr ? `${MASJID.name}  ▾` : `${MASJID.name} · ${MASJID.city}  ▾`;
+  const addrEl = document.getElementById("masjidAddr");
+  addrEl.textContent = addr;
+  addrEl.href = addr ? "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(`${MASJID.name}, ${addr}`) : "#";
+  addrEl.style.display = addr ? "" : "none";
   document.getElementById("footNote").innerHTML = (MASJID.note || "").split("\n").map((l) => l.replace(/&/g, "&amp;").replace(/</g, "&lt;")).join("<br>");
 
   const base = new Date(Date.UTC(now.y, now.m - 1, now.d, 12));
   const greg = base.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", timeZone: "UTC" });
-  let hijri = "";
-  try {
-    // Built from parts so the era shows as "AH" (Hijri), never "BC"/"BCE"
-    const h = {};
-    new Intl.DateTimeFormat("en-u-ca-islamic-umalqura", { day: "numeric", month: "numeric", year: "numeric", timeZone: "UTC" })
-      .formatToParts(base).forEach((x) => (h[x.type] = x.value));
-    const MONTHS = ["Muharram", "Safar", "Rabi al-Awwal", "Rabi al-Thani", "Jumada al-Ula", "Jumada al-Akhirah",
-      "Rajab", "Sha'ban", "Ramadan", "Shawwal", "Dhul Qa'dah", "Dhul Hijjah"];
-    hijri = `${MONTHS[Number(h.month) - 1]} ${h.day}, ${h.year} AH`;
-  } catch (e) {}
+  const hijri = hijriLabel(now.y, now.m, now.d);
   // Line 1: Hijri date. Line 2: regular date.
   document.getElementById("dates").innerHTML = hijri
     ? `<div class="hijri">${hijri}</div><div>${greg}</div>` : greg;
