@@ -22,3 +22,21 @@ A rule is `"at": "6:35 AM"` or `"after": "sunset", "minutes": N`, plus an option
 (the 2nd Sunday of the month, for daylight saving switches). `jumuah` is a single time.
 
 If a masjid sets iqamah some other way, send it to me and we will add a new kind of rule.
+
+## Ramadan and Eid (masjid admins)
+
+Each masjid enters its own Ramadan start date, Ramadan times, Taraweeh and Eid prayers on the
+admin page: https://gufranmohammed48.github.io/Iqamatime/admin/ . The times are saved in the
+"Iqama Time" Firebase project and the app picks them up the next time it opens. Anything the
+admin leaves on "Normal schedule" keeps the times in this folder.
+
+To give a masjid a login (Firebase console, project "Iqama Time"):
+
+1. **Authentication > Users > Add user**: the admin's email and a starting password. Copy the
+   new user's **User UID**. (The admin can pick their own password with "Forgot password?".)
+2. **Firestore > Data > Start collection** `admins` (only the first time), then **Add document**:
+   Document ID = that User UID, one field `masjidId` (string) = the masjid's file name without
+   `.json`, for example `imof-davie`.
+
+Public sign-up is turned off, so only logins made this way exist. The security rules live in
+`firestore.rules` (paste into Firestore > Rules and Publish after changing them).

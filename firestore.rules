@@ -1,0 +1,35 @@
+rules_version = '2';
+
+// Security rules for the "Iqama Time" Firebase project (paste into Firestore > Rules).
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Which masjid each admin login manages: admins/{uid} = { masjidId: "imof-davie" }
+    // (or masjidIds: ["a", "b"] for someone who manages several). Only the app owner adds
+    // these, in the Firebase console; an admin can read only their own entry.
+    match /admins/{uid} {
+      allow read: if request.auth != null && request.auth.uid == uid;
+      allow write: if false;
+    }
+
+    // Ramadan and Eid times, one document per masjid: { json, updatedAt, updatedBy }.
+    // Everyone can read them (the app shows them); only that masjid's admins can change them.
+    match /seasons/{masjidId} {
+      allow read: if true;
+      allow create, update: if isAdminOf(masjidId)
+        && request.resource.data.keys().hasOnly(["json", "updatedAt", "updatedBy"])
+        && request.resource.data.json is string
+        && request.resource.data.json.size() < 100000
+        && request.resource.data.updatedAt == request.time
+        && request.resource.data.updatedBy == request.auth.token.email;
+      allow delete: if false;
+    }
+
+    function isAdminOf(masjidId) {
+      let path = /databases/$(database)/documents/admins/$(request.auth.uid);
+      return request.auth != null && exists(path)
+        && (get(path).data.get("masjidId", "") == masjidId
+            || masjidId in get(path).data.get("masjidIds", []));
+    }
+  }
+}

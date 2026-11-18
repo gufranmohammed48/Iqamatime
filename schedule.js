@@ -92,6 +92,56 @@ function minutesFor(masjid, prayer, year, month1, day) {
   return resolveEntry(rule, masjid, year, month1, day);
 }
 
+/* ---- Ramadan and Eid ----
+   Entered by each masjid's admin on the admin page (admin/) and attached by picker.js
+   as masjid.season:
+     { ramadan: { start: "2027-02-08", days: 30,
+                  times:  { fajr, zuhr, asr, maghrib, isha, taraweeh },      for every night
+                  byDate: { "2027-02-20": { isha: "8:45 PM" } } },           one-day changes
+       eids: [ { name: "Eid al-Fitr", date: "2027-03-10", times: ["8:00 AM", "9:30 AM"], place: "..." } ] }
+   A time is "6:30 AM" or "sunset+10". A blank or missing time keeps the normal schedule. */
+function isoDate(y, m, d) {
+  return `${y}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+}
+
+function seasonTime(v, masjid, y, m, d) {
+  if (typeof v !== "string" || !v.trim()) return null;
+  const s = /^\s*sunset\s*\+\s*(\d{1,3})\s*$/i.exec(v);
+  const mins = s ? sunsetMinutes(masjid, y, m, d) + Number(s[1]) : parseTime(v);
+  if (!(mins >= 0 && mins < 1440)) throw new Error(`Bad time "${v}"`);
+  return mins;
+}
+
+// Day of Ramadan (1-30) at this masjid, or 0 when the date isn't in its Ramadan
+function ramadanDay(masjid, y, m, d) {
+  const r = masjid.season && masjid.season.ramadan;
+  const s = r && /^(\d{4})-(\d{2})-(\d{2})$/.exec(r.start || "");
+  if (!s) return 0;
+  const n = Math.round((Date.UTC(y, m - 1, d) - Date.UTC(Number(s[1]), Number(s[2]) - 1, Number(s[3]))) / 86400000) + 1;
+  return n >= 1 && n <= (r.days === 29 ? 29 : 30) ? n : 0;
+}
+
+function seasonFor(masjid, y, m, d) {
+  const season = masjid.season, out = {};
+  if (!season) return out;
+  const key = isoDate(y, m, d), n = ramadanDay(masjid, y, m, d);
+  if (n) {
+    const r = season.ramadan, oneDay = (r.byDate && r.byDate[key]) || {}, every = r.times || {};
+    for (const k of [...PRAYER_KEYS, "taraweeh"]) {
+      let v = seasonTime(oneDay[k], masjid, y, m, d);
+      if (v === null) v = seasonTime(every[k], masjid, y, m, d);
+      if (v !== null) out[k] = v;
+    }
+    out.ramadanDay = n;
+  }
+  const eid = Array.isArray(season.eids) && season.eids.find((e) => e && e.date === key);
+  if (eid) {
+    const times = (eid.times || []).map((t) => seasonTime(t, masjid, y, m, d)).filter((v) => v !== null);
+    if (times.length) out.eid = { name: String(eid.name || "Eid"), place: String(eid.place || ""), times: times.sort((a, b) => a - b) };
+  }
+  return out;
+}
+
 // Iqamah times (minutes after midnight) for one masjid on a calendar date (month is 1-based)
 function iqamahForMasjid(masjid, year, month1, day) {
   const dow = new Date(Date.UTC(year, month1 - 1, day)).getUTCDay();
@@ -99,7 +149,19 @@ function iqamahForMasjid(masjid, year, month1, day) {
   for (const k of PRAYER_KEYS) out[k] = minutesFor(masjid, k, year, month1, day);
   out.jumuah = parseTime(masjid.jumuah);
   out.isFriday = dow === 5;
+  // Ramadan / Eid changes; a mistyped admin entry never breaks the normal times
+  try { Object.assign(out, seasonFor(masjid, year, month1, day)); } catch (e) {}
   return out;
+}
+
+// The next Eid prayer within `days` days after the given date (not counting that date), or null
+function upcomingEid(masjid, y, m, d, days) {
+  for (let i = 1; i <= days; i++) {
+    const dt = new Date(Date.UTC(y, m - 1, d + i));
+    const t = iqamahForMasjid(masjid, dt.getUTCFullYear(), dt.getUTCMonth() + 1, dt.getUTCDate());
+    if (t.eid) return { y: dt.getUTCFullYear(), m: dt.getUTCMonth() + 1, d: dt.getUTCDate(), eid: t.eid };
+  }
+  return null;
 }
 
 // Same, for the masjid the user picked
@@ -107,4 +169,4 @@ function iqamahFor(year, month1, day) {
   return iqamahForMasjid(MASJID, year, month1, day);
 }
 
-if (typeof module !== "undefined") module.exports = { iqamahForMasjid, sunsetMinutes, parseTime, nthSunday };
+if (typeof module !== "undefined") module.exports = { iqamahForMasjid, sunsetMinutes, parseTime, nthSunday, ramadanDay, upcomingEid };

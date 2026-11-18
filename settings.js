@@ -10,9 +10,11 @@ const FIRED_KEY = "iqamahFired";
 const DEFAULTS = {
   lead: 20,
   theme: "auto",
-  prayers: { fajr: "notify", zuhr: "notify", asr: "notify", maghrib: "notify", isha: "notify", jumuah: "notify" },
+  prayers: { fajr: "notify", zuhr: "notify", asr: "notify", maghrib: "notify", isha: "notify", jumuah: "notify",
+    taraweeh: "off", eid: "notify" }, // Taraweeh and Eid only happen when the masjid posts them
 };
-const PRAYER_LABELS = { fajr: "Fajr", zuhr: "Zuhr", asr: "Asr", maghrib: "Maghrib", isha: "Isha", jumuah: "Jumu'ah" };
+const PRAYER_LABELS = { fajr: "Fajr", zuhr: "Zuhr", asr: "Asr", maghrib: "Maghrib", isha: "Isha", jumuah: "Jumu'ah",
+  taraweeh: "Taraweeh", eid: "Eid" };
 const LEAD_PRESETS = [0, 10, 20, 30];
 
 function loadSettings() {
@@ -91,7 +93,7 @@ function renderLookup() {
   try { times = iqamahFor(y, mo, d); } catch (e) { head.textContent = "No times are available for that date."; rows.innerHTML = ""; return; }
   const greg = new Date(Date.UTC(y, mo - 1, d, 12)).toLocaleDateString("en-US",
     { weekday: "long", month: "long", day: "numeric", year: "numeric", timeZone: "UTC" });
-  head.innerHTML = `<b>${greg}</b>${hijriLabel(y, mo, d)}`;
+  head.innerHTML = `<b>${greg}</b>${times.ramadanDay ? `🌙 Ramadan, day ${times.ramadanDay} at this masjid` : hijriLabel(y, mo, d)}`;
   rows.innerHTML = dayList(times).map((p) => `<div class="lrow"><span>${p.name}</span><span>${fmt(p.mins)}</span></div>`).join("");
 }
 $("lookupDate").addEventListener("change", renderLookup);

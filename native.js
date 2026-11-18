@@ -13,6 +13,7 @@
   if (!LN) return;
 
   const DAYS_AHEAD = 14;
+  const RAMADAN_DAYS_AHEAD = 7;
   const IOS_MAX_PENDING = 60; // iOS limit is 64; stay under it
   const CHANNEL = "iqamah-reminders";
   const ADHAN_CHANNEL = "iqamah-reminders-adhan";
@@ -64,7 +65,14 @@
     const now = masjidNow();
     const nowMs = Date.now();
     const list = [];
+    // Ramadan and Eid times are edited by the masjid's admin and can change at short notice, so
+    // only schedule a week ahead then (the app reschedules with fresh times every time it opens)
+    let days = DAYS_AHEAD;
     for (let i = 0; i < DAYS_AHEAD; i++) {
+      const day = addDays(now.y, now.m, now.d, i), t = iqamahFor(day.y, day.m, day.d);
+      if (t.ramadanDay || t.eid) { days = RAMADAN_DAYS_AHEAD; break; }
+    }
+    for (let i = 0; i < days; i++) {
       const day = addDays(now.y, now.m, now.d, i);
       const dayNum = day.y * 10000 + day.m * 100 + day.d;
       dayList(iqamahFor(day.y, day.m, day.d)).forEach((p, idx) => {

@@ -1,0 +1,475 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>Masjid Admin – Iqama Time</title>
+  <link rel="icon" href="../icons/icon-192.png">
+  <style>
+    :root {
+      --bg: #f5f1e8; --card: #ffffff; --ink: #1d2a26; --muted: #6b766f; --line: #e6e0d2;
+      --brand: #0f3d34; --brand-2: #16584b; --gold: #c79a3e; --gold-soft: #f3e7cb; --bad: #b3261e; --ok: #2e7d5b;
+      color-scheme: light dark;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) {
+        --bg: #0d1513; --card: #15211e; --ink: #eef2ee; --muted: #94a39b; --line: #2a3b36;
+        --brand: #0b2f28; --brand-2: #1f6b5c; --gold: #d6aa4f; --gold-soft: #3a3220; --bad: #f2b8b5; --ok: #7fd1a8;
+      }
+    }
+    :root[data-theme="dark"] {
+      --bg: #0d1513; --card: #15211e; --ink: #eef2ee; --muted: #94a39b; --line: #2a3b36;
+      --brand: #0b2f28; --brand-2: #1f6b5c; --gold: #d6aa4f; --gold-soft: #3a3220; --bad: #f2b8b5; --ok: #7fd1a8;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--ink); line-height: 1.45; padding-bottom: 110px; }
+    header { background: linear-gradient(160deg, var(--brand), var(--brand-2)); color: #fff; padding: 22px 16px 26px; text-align: center; }
+    header h1 { font-size: 21px; }
+    header p { font-size: 13px; opacity: .8; margin-top: 2px; }
+    main { max-width: 760px; margin: 0 auto; padding: 0 16px; }
+    .card { background: var(--card); border-radius: 16px; padding: 18px; margin-top: 16px; box-shadow: 0 4px 18px rgba(15,61,52,.08); }
+    h2 { font-size: 18px; margin-bottom: 4px; }
+    .hint { font-size: 13px; color: var(--muted); margin-bottom: 12px; }
+    label.f { display: block; font-size: 13px; font-weight: 700; margin: 12px 0 4px; }
+    input, select { font: inherit; font-size: 16px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--bg); color: var(--ink); }
+    input[type=email], input[type=password], input[type=text] { width: 100%; }
+    button { font: inherit; cursor: pointer; }
+    .btn { border: 0; border-radius: 11px; padding: 12px 18px; font-size: 15px; font-weight: 700; background: var(--brand-2); color: #fff; }
+    .btn.ghost { background: var(--bg); color: var(--ink); border: 1px solid var(--line); }
+    .btn.small { padding: 8px 12px; font-size: 13px; }
+    .link { border: 0; background: none; color: var(--brand-2); font-weight: 600; text-decoration: underline; padding: 0; }
+    @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .link { color: var(--gold); } }
+    .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+    .msg { font-size: 14px; margin-top: 10px; min-height: 20px; }
+    .msg.bad { color: var(--bad); } .msg.ok { color: var(--ok); }
+    .seg { display: inline-flex; background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 3px; }
+    .seg button { border: 0; background: none; padding: 8px 16px; border-radius: 8px; font-weight: 700; color: var(--ink); }
+    .seg button.on { background: var(--brand-2); color: #fff; }
+    .times { width: 100%; border-collapse: collapse; }
+    .times td { padding: 8px 4px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+    .times tr:last-child td { border-bottom: 0; }
+    .times td:first-child { font-weight: 700; width: 90px; }
+    .times select { width: 100%; max-width: 230px; }
+    .times .val input { width: 140px; }
+    .times .eg { font-size: 12px; color: var(--muted); }
+    details { margin-top: 16px; }
+    summary { font-weight: 700; cursor: pointer; }
+    .tablewrap { overflow-x: auto; margin-top: 10px; border: 1px solid var(--line); border-radius: 12px; }
+    table.days { border-collapse: collapse; font-size: 14px; min-width: 720px; width: 100%; }
+    table.days th, table.days td { padding: 4px; border-bottom: 1px solid var(--line); text-align: center; white-space: nowrap; }
+    table.days th { font-size: 11px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); padding: 8px 4px; position: sticky; top: 0; background: var(--card); }
+    table.days td:first-child, table.days th:first-child { text-align: left; padding-left: 10px; font-weight: 600; }
+    table.days input { width: 112px; padding: 6px; font-size: 14px; }
+    table.days input.changed { border-color: var(--gold); background: var(--gold-soft); font-weight: 700; }
+    table.days tr.fri td:first-child { color: var(--gold); }
+    .eid { border: 1px solid var(--line); border-radius: 12px; padding: 12px; margin-top: 12px; }
+    .eid .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px 10px; }
+    .eid .grid label { font-size: 12px; font-weight: 700; display: block; margin-bottom: 3px; }
+    .eid .grid input, .eid .grid select { width: 100%; }
+    .savebar { position: fixed; left: 0; right: 0; bottom: 0; background: var(--card); border-top: 1px solid var(--line); padding: 12px 16px calc(12px + env(safe-area-inset-bottom)); }
+    .savebar .inner { max-width: 760px; margin: 0 auto; display: flex; gap: 12px; align-items: center; }
+    .savebar .msg { margin: 0; flex: 1; }
+    [hidden] { display: none !important; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Iqama Time · Masjid admin</h1>
+    <p>Ramadan and Eid times for your masjid</p>
+  </header>
+
+  <main>
+    <!-- Sign in -->
+    <section class="card" id="loginCard" hidden>
+      <h2>Sign in</h2>
+      <p class="hint">Use the email and password the Iqama Time team gave your masjid.</p>
+      <form id="loginForm">
+        <label class="f" for="email">Email</label>
+        <input type="email" id="email" autocomplete="username" required>
+        <label class="f" for="password">Password</label>
+        <input type="password" id="password" autocomplete="current-password" required>
+        <div class="row" style="margin-top:14px">
+          <button class="btn" type="submit">Sign in</button>
+          <button class="link" type="button" id="forgotBtn">Forgot password?</button>
+        </div>
+      </form>
+      <p class="msg" id="loginMsg"></p>
+    </section>
+
+    <!-- Signed in -->
+    <div id="panel" hidden>
+      <section class="card">
+        <div class="row" style="justify-content:space-between">
+          <div>
+            <h2 id="masjidName">…</h2>
+            <p class="hint" style="margin:0">Signed in as <span id="who"></span></p>
+          </div>
+          <button class="btn ghost small" id="signOutBtn">Sign out</button>
+        </div>
+        <p class="msg" id="lastSaved"></p>
+      </section>
+
+      <section class="card">
+        <h2>🌙 Ramadan</h2>
+        <p class="hint">Times you leave on "Normal schedule" stay the same as the rest of the year.</p>
+
+        <label class="f" for="rStart">First day of Ramadan at your masjid (the first fast)</label>
+        <div class="row">
+          <input type="date" id="rStart">
+          <button class="btn ghost small" id="rClear" type="button">Remove Ramadan times</button>
+        </div>
+
+        <label class="f">How many days</label>
+        <div class="seg" id="rDays"><button type="button" data-v="29">29</button><button type="button" data-v="30">30</button></div>
+        <p class="hint" style="margin-top:6px">Not sure yet? Pick 30. Put the Eid prayer below once Eid is announced.</p>
+
+        <label class="f">Iqamah times for every day of Ramadan</label>
+        <table class="times" id="rTimes"></table>
+
+        <details id="dayDetails">
+          <summary>Change a time on one day only</summary>
+          <p class="hint" style="margin-top:8px">This shows every day of Ramadan. Change any box to set a different time for that one day. Changed boxes are highlighted; empty a box to go back to the normal time.</p>
+          <div class="tablewrap"><table class="days" id="rDayTable"></table></div>
+        </details>
+      </section>
+
+      <section class="card">
+        <h2>★ Eid prayer</h2>
+        <p class="hint">Add the Eid prayer once the date is announced. It shows in the app for the 10 days before.</p>
+        <div id="eidList"></div>
+        <button class="btn ghost small" id="addEid" type="button" style="margin-top:12px">+ Add Eid prayer</button>
+      </section>
+
+      <p class="hint" style="margin-top:16px;text-align:center">Phones pick up saved changes the next time the app is opened.</p>
+    </div>
+
+    <section class="card" id="noMasjid" hidden>
+      <h2>This login isn't linked to a masjid yet</h2>
+      <p class="hint">Ask the Iqama Time team to link it to your masjid, then sign in again.</p>
+      <button class="btn ghost small" id="signOutBtn2">Sign out</button>
+    </section>
+  </main>
+
+  <div class="savebar" id="saveBar" hidden>
+    <div class="inner">
+      <p class="msg" id="saveMsg"></p>
+      <button class="btn" id="saveBtn">Save</button>
+    </div>
+  </div>
+
+  <!-- the same schedule engine the app uses, so the times shown here match the app exactly -->
+  <script src="../schedule.js"></script>
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/13.4.0/firebase-app.js";
+    import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut, sendPasswordResetEmail }
+      from "https://www.gstatic.com/firebasejs/13.4.0/firebase-auth.js";
+    import { getFirestore, doc, getDoc, setDoc, serverTimestamp }
+      from "https://www.gstatic.com/firebasejs/13.4.0/firebase-firestore.js";
+
+    // Public web settings of the "Iqama Time" Firebase project (safe to publish; access is
+    // controlled by the sign-in and by the Firestore rules in firestore.rules)
+    const app = initializeApp({
+      apiKey: "AIzaSyCf5_o1nMtmV-AWgenwjvcdwWEpRbAixhI",
+      authDomain: "iqama-time.firebaseapp.com",
+      projectId: "iqama-time",
+      storageBucket: "iqama-time.firebasestorage.app",
+      messagingSenderId: "559939077422",
+      appId: "1:559939077422:web:672a4a0370f5ab8dfba6bf",
+    });
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    const $ = (id) => document.getElementById(id);
+    const KEYS = ["fajr", "zuhr", "asr", "maghrib", "isha", "taraweeh"];
+    const NAMES = { fajr: "Fajr", zuhr: "Zuhr", asr: "Asr", maghrib: "Maghrib", isha: "Isha", taraweeh: "Taraweeh" };
+
+    let masjid = null;   // the masjid's normal schedule (masjids/<id>.json)
+    let state = null;    // what the admin is editing
+    let dirty = false;
+
+    /* ---------- time helpers ---------- */
+    // "06:30" (time box) <-> "6:30 AM" (saved)
+    function boxToText(v) {
+      const m = /^(\d{2}):(\d{2})/.exec(v || ""); if (!m) return "";
+      let h = Number(m[1]); const ap = h >= 12 ? "PM" : "AM"; h = h % 12 || 12;
+      return `${h}:${m[2]} ${ap}`;
+    }
+    function minsToBox(mins) {
+      return `${String(Math.floor(mins / 60)).padStart(2, "0")}:${String(mins % 60).padStart(2, "0")}`;
+    }
+    function textToBox(t) { try { return minsToBox(parseTime(t)); } catch (e) { return ""; } }
+    function iso(y, m, d) { return `${y}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}`; }
+    function addDaysIso(start, n) {
+      const [y, m, d] = start.split("-").map(Number);
+      const dt = new Date(Date.UTC(y, m - 1, d + n));
+      return { y: dt.getUTCFullYear(), m: dt.getUTCMonth() + 1, d: dt.getUTCDate(), dow: dt.getUTCDay(),
+        key: iso(dt.getUTCFullYear(), dt.getUTCMonth() + 1, dt.getUTCDate()) };
+    }
+
+    /* ---------- saved data <-> editing state ---------- */
+    function emptyState() {
+      const times = {}; KEYS.forEach((k) => (times[k] = { mode: "normal", at: "", minutes: "" }));
+      return { start: "", days: 30, times, byDate: {}, eids: [] };
+    }
+    function stateFromSeason(s) {
+      const st = emptyState();
+      const r = s && s.ramadan;
+      if (r) {
+        st.start = r.start || ""; st.days = r.days === 29 ? 29 : 30;
+        KEYS.forEach((k) => {
+          const v = r.times && r.times[k]; if (!v) return;
+          const sun = /^\s*sunset\s*\+\s*(\d+)\s*$/i.exec(v);
+          st.times[k] = sun ? { mode: "sunset", at: "", minutes: sun[1] } : { mode: "fixed", at: textToBox(v), minutes: "" };
+        });
+        st.byDate = JSON.parse(JSON.stringify(r.byDate || {}));
+      }
+      st.eids = (s && Array.isArray(s.eids) ? s.eids : []).map((e) => ({
+        name: e.name || "Eid al-Fitr", date: e.date || "", place: e.place || "",
+        times: [0, 1, 2].map((i) => textToBox((e.times || [])[i] || "")),
+      }));
+      return st;
+    }
+    function everyDayText(k) {
+      const t = state.times[k];
+      if (t.mode === "fixed" && t.at) return boxToText(t.at);
+      if (t.mode === "sunset" && t.minutes !== "" && Number(t.minutes) >= 0) return `sunset+${Number(t.minutes)}`;
+      return "";
+    }
+    // The time the app would show for one prayer on one Ramadan day, before any one-day change
+    function defaultMins(k, day) {
+      const every = everyDayText(k);
+      if (every) {
+        const sun = /^sunset\+(\d+)$/.exec(every);
+        return sun ? sunsetMinutes(masjid, day.y, day.m, day.d) + Number(sun[1]) : parseTime(every);
+      }
+      if (k === "taraweeh") return null;
+      const plain = Object.assign({}, masjid, { season: null });
+      return iqamahForMasjid(plain, day.y, day.m, day.d)[k];
+    }
+    function escapeText(s) { return String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;"); }
+    function seasonFromState() {
+      const out = { ramadan: null, eids: [] };
+      if (state.start) {
+        const times = {}; KEYS.forEach((k) => { const v = everyDayText(k); if (v) times[k] = v; });
+        const byDate = {};
+        for (let i = 0; i < state.days; i++) { // keep only one-day changes inside this Ramadan
+          const key = addDaysIso(state.start, i).key;
+          if (state.byDate[key] && Object.keys(state.byDate[key]).length) byDate[key] = state.byDate[key];
+        }
+        out.ramadan = { start: state.start, days: state.days, times, byDate };
+      }
+      out.eids = state.eids.map((e) => ({
+        name: e.name, date: e.date, place: e.place.trim(), times: e.times.map(boxToText).filter(Boolean),
+      })).filter((e) => e.date && e.times.length);
+      return out;
+    }
+
+    /* ---------- drawing ---------- */
+    function renderRamadan() {
+      $("rStart").value = state.start;
+      document.querySelectorAll("#rDays button").forEach((b) => b.classList.toggle("on", Number(b.dataset.v) === state.days));
+      $("rTimes").innerHTML = KEYS.map((k) => {
+        const t = state.times[k];
+        return `<tr data-k="${k}"><td>${NAMES[k]}</td>
+          <td><select data-f="mode">
+            <option value="normal" ${t.mode === "normal" ? "selected" : ""}>${k === "taraweeh" ? "No Taraweeh time" : "Normal schedule"}</option>
+            <option value="fixed" ${t.mode === "fixed" ? "selected" : ""}>Same time every day</option>
+            <option value="sunset" ${t.mode === "sunset" ? "selected" : ""}>Minutes after sunset</option>
+          </select></td>
+          <td class="val">${t.mode === "fixed" ? `<input type="time" data-f="at" value="${t.at}">`
+            : t.mode === "sunset" ? `<input type="number" min="0" max="180" data-f="minutes" value="${t.minutes}" placeholder="min"> <span class="eg">min after sunset</span>`
+            : ""}</td></tr>`;
+      }).join("");
+      renderDayTable();
+    }
+
+    function renderDayTable() {
+      const table = $("rDayTable");
+      if (!state.start) { table.innerHTML = `<tr><td style="padding:12px">Pick the first day of Ramadan first.</td></tr>`; return; }
+      let html = `<tr><th>Day</th>${KEYS.map((k) => `<th>${NAMES[k]}</th>`).join("")}</tr>`;
+      for (let i = 0; i < state.days; i++) {
+        const day = addDaysIso(state.start, i);
+        const label = new Date(Date.UTC(day.y, day.m - 1, day.d)).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", timeZone: "UTC" });
+        const cells = KEYS.map((k) => {
+          if (k === "zuhr" && day.dow === 5) return `<td class="hint" style="margin:0">Jumu'ah ${escapeText(masjid.jumuah)}</td>`; // Friday: the app shows Jumu'ah
+          const over = state.byDate[day.key] && state.byDate[day.key][k];
+          let def = null; try { def = defaultMins(k, day); } catch (e) {}
+          const val = over ? textToBox(over) : def === null ? "" : minsToBox(def);
+          return `<td><input type="time" data-day="${day.key}" data-k="${k}" value="${val}" class="${over ? "changed" : ""}"
+            aria-label="${NAMES[k]} on ${label}"></td>`;
+        }).join("");
+        html += `<tr class="${day.dow === 5 ? "fri" : ""}"><td>${i + 1} · ${label}</td>${cells}</tr>`;
+      }
+      table.innerHTML = html;
+    }
+
+    function renderEids() {
+      $("eidList").innerHTML = state.eids.map((e, i) => `
+        <div class="eid" data-i="${i}">
+          <div class="grid">
+            <div><label>Which Eid</label><select data-f="name">
+              ${["Eid al-Fitr", "Eid al-Adha"].map((n) => `<option ${e.name === n ? "selected" : ""}>${n}</option>`).join("")}</select></div>
+            <div><label>Date</label><input type="date" data-f="date" value="${e.date}"></div>
+            ${[0, 1, 2].map((j) => `<div><label>${j === 0 ? "First prayer" : j === 1 ? "Second prayer (optional)" : "Third prayer (optional)"}</label>
+              <input type="time" data-f="t${j}" value="${e.times[j]}"></div>`).join("")}
+          </div>
+          <label style="font-size:12px;font-weight:700;display:block;margin:10px 0 3px">Place (optional, if not at the masjid)</label>
+          <input type="text" data-f="place" maxlength="120" placeholder="e.g. Markham Park, Pavilion 5">
+          <button class="link" type="button" data-f="remove" style="margin-top:10px">Remove this Eid prayer</button>
+        </div>`).join("") || `<p class="hint">No Eid prayer added yet.</p>`;
+      // set the free-text value after building, so nothing typed can break the page
+      document.querySelectorAll("#eidList .eid").forEach((el) => { el.querySelector('[data-f="place"]').value = state.eids[el.dataset.i].place; });
+    }
+
+    function markDirty() { dirty = true; $("saveMsg").className = "msg"; $("saveMsg").textContent = "You have changes that aren't saved yet."; }
+
+    /* ---------- editing ---------- */
+    $("rStart").addEventListener("change", () => { state.start = $("rStart").value; markDirty(); renderDayTable(); });
+    $("rDays").addEventListener("click", (e) => {
+      const b = e.target.closest("button"); if (!b) return;
+      state.days = Number(b.dataset.v); markDirty(); renderRamadan();
+    });
+    $("rClear").addEventListener("click", () => {
+      if (!confirm("Remove all Ramadan times for your masjid? (Eid prayers stay.) This happens when you press Save.")) return;
+      const eids = state.eids; state = emptyState(); state.eids = eids; markDirty(); renderRamadan();
+    });
+    $("rTimes").addEventListener("change", (e) => {
+      const tr = e.target.closest("tr"); if (!tr) return;
+      const t = state.times[tr.dataset.k], f = e.target.dataset.f;
+      t[f] = e.target.value;
+      if (f === "mode" && t.mode === "sunset" && t.minutes === "") t.minutes = tr.dataset.k === "maghrib" ? "10" : "";
+      markDirty();
+      if (f === "mode") renderRamadan(); else renderDayTable();
+    });
+    $("rDayTable").addEventListener("change", (e) => {
+      const inp = e.target; if (!inp.dataset.day) return;
+      const day = addDaysIso(inp.dataset.day, 0), k = inp.dataset.k;
+      let def = null; try { def = defaultMins(k, day); } catch (err) {}
+      const same = !inp.value || (def !== null && inp.value === minsToBox(def));
+      const list = state.byDate[day.key] || (state.byDate[day.key] = {});
+      if (same) delete list[k]; else list[k] = boxToText(inp.value);
+      if (!Object.keys(list).length) delete state.byDate[day.key];
+      if (!inp.value && def !== null) inp.value = minsToBox(def);
+      inp.classList.toggle("changed", !same);
+      markDirty();
+    });
+    $("addEid").addEventListener("click", () => {
+      const eidName = state.start && state.eids.every((e) => e.name !== "Eid al-Fitr") ? "Eid al-Fitr" : "Eid al-Adha";
+      let date = "";
+      if (state.start && eidName === "Eid al-Fitr") date = addDaysIso(state.start, state.days).key; // the day after the last fast
+      state.eids.push({ name: eidName, date, place: "", times: ["", "", ""] });
+      markDirty(); renderEids();
+    });
+    $("eidList").addEventListener("input", (e) => {
+      const box = e.target.closest(".eid"); if (!box) return;
+      const eid = state.eids[box.dataset.i], f = e.target.dataset.f;
+      if (f === "name" || f === "date" || f === "place") eid[f] = e.target.value;
+      else if (/^t\d$/.test(f || "")) eid.times[Number(f[1])] = e.target.value;
+      markDirty();
+    });
+    $("eidList").addEventListener("click", (e) => {
+      if (e.target.dataset.f !== "remove") return;
+      state.eids.splice(Number(e.target.closest(".eid").dataset.i), 1); markDirty(); renderEids();
+    });
+    window.addEventListener("beforeunload", (e) => { if (dirty) { e.preventDefault(); e.returnValue = ""; } });
+
+    /* ---------- saving ---------- */
+    function problems() {
+      const out = [];
+      if (!state.start && KEYS.some((k) => everyDayText(k))) out.push("Pick the first day of Ramadan.");
+      KEYS.forEach((k) => {
+        const t = state.times[k];
+        if (t.mode === "fixed" && !t.at) out.push(`Enter the ${NAMES[k]} time, or set it back to normal.`);
+        if (t.mode === "sunset" && !(t.minutes !== "" && Number(t.minutes) >= 0 && Number(t.minutes) <= 180))
+          out.push(`Enter how many minutes after sunset for ${NAMES[k]} (0 to 180).`);
+      });
+      state.eids.forEach((e) => {
+        if (!e.date) out.push(`Pick the date for ${e.name}.`);
+        if (!e.times.some(Boolean)) out.push(`Enter at least one prayer time for ${e.name}.`);
+      });
+      return out;
+    }
+    $("saveBtn").addEventListener("click", async () => {
+      const msg = $("saveMsg"), bad = problems();
+      if (bad.length) { msg.className = "msg bad"; msg.textContent = bad[0]; return; }
+      msg.className = "msg"; msg.textContent = "Saving…"; $("saveBtn").disabled = true;
+      try {
+        await setDoc(doc(db, "seasons", masjid.id), {
+          json: JSON.stringify(seasonFromState()), updatedAt: serverTimestamp(), updatedBy: auth.currentUser.email,
+        });
+        dirty = false;
+        msg.className = "msg ok"; msg.textContent = "✓ Saved. Phones get the new times the next time the app opens.";
+        $("lastSaved").textContent = `Last saved just now by ${auth.currentUser.email}`;
+      } catch (e) {
+        msg.className = "msg bad";
+        msg.textContent = e.code === "permission-denied"
+          ? "This login isn't allowed to change this masjid. Contact the Iqama Time team."
+          : "Couldn't save. Check your internet connection and try again.";
+      } finally { $("saveBtn").disabled = false; }
+    });
+
+    /* ---------- sign in / out ---------- */
+    $("loginForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      $("loginMsg").className = "msg"; $("loginMsg").textContent = "Signing in…";
+      try { await signInWithEmailAndPassword(auth, $("email").value.trim(), $("password").value); $("loginMsg").textContent = ""; }
+      catch (err) {
+        $("loginMsg").className = "msg bad";
+        $("loginMsg").textContent = err.code === "auth/too-many-requests"
+          ? "Too many tries. Wait a few minutes, or use Forgot password."
+          : "That email and password didn't work. Try again, or use Forgot password.";
+      }
+    });
+    $("forgotBtn").addEventListener("click", async () => {
+      const email = $("email").value.trim();
+      if (!email) { $("loginMsg").className = "msg bad"; $("loginMsg").textContent = "Type your email above first."; return; }
+      try { await sendPasswordResetEmail(auth, email); } catch (e) {}
+      $("loginMsg").className = "msg ok";
+      $("loginMsg").textContent = "If that email has an admin login, a link to set a new password is on its way. Check spam too.";
+    });
+    const doSignOut = () => { if (!dirty || confirm("You have changes that aren't saved. Sign out anyway?")) { dirty = false; signOut(auth); } };
+    $("signOutBtn").addEventListener("click", doSignOut);
+    $("signOutBtn2").addEventListener("click", doSignOut);
+
+    function show(which) {
+      $("loginCard").hidden = which !== "login";
+      $("panel").hidden = which !== "panel";
+      $("saveBar").hidden = which !== "panel";
+      $("noMasjid").hidden = which !== "none";
+    }
+
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) { show("login"); return; }
+      try {
+        const link = await getDoc(doc(db, "admins", user.uid));
+        const data = link.exists() ? link.data() : {};
+        const ids = data.masjidIds || (data.masjidId ? [data.masjidId] : []);
+        if (!ids.length) { show("none"); return; }
+        const id = ids[0]; // one masjid per login for now
+        const res = await fetch(`../masjids/${encodeURIComponent(id)}.json`, { cache: "no-cache" });
+        if (!res.ok) throw new Error("masjid file");
+        masjid = await res.json();
+        const saved = await getDoc(doc(db, "seasons", id));
+        let season = null;
+        if (saved.exists()) {
+          try { season = JSON.parse(saved.data().json); } catch (e) {}
+          const when = saved.data().updatedAt && saved.data().updatedAt.toDate();
+          $("lastSaved").textContent = when ? `Last saved ${when.toLocaleString()} by ${saved.data().updatedBy}` : "";
+        } else $("lastSaved").textContent = "Nothing saved yet for this masjid.";
+        state = stateFromSeason(season);
+        dirty = false;
+        $("masjidName").textContent = masjid.name;
+        $("who").textContent = user.email;
+        $("saveMsg").textContent = "";
+        renderRamadan(); renderEids();
+        show("panel");
+      } catch (e) {
+        show("login");
+        $("loginMsg").className = "msg bad";
+        $("loginMsg").textContent = "Couldn't load your masjid. Check your internet connection and reload the page.";
+      }
+    });
+  </script>
+</body>
+</html>

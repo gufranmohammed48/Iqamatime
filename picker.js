@@ -11,6 +11,8 @@
   const MASJID_KEY = "iqamahMasjid";          // id of the chosen masjid
   const CACHE_PREFIX = "iqamahData:";         // cached copies of the JSON files
   const REMOTE_BASE = "https://gufranmohammed48.github.io/Iqamatime/masjids/"; // live data for the phone apps
+  // Ramadan / Eid times that masjid admins enter on the admin page (Firebase). Public, read-only here.
+  const SEASON_URL = "https://firestore.googleapis.com/v1/projects/iqama-time/databases/(default)/documents/seasons/";
   const isNative = !!(window.Capacitor && Capacitor.isNativePlatform && Capacitor.isNativePlatform());
 
   const $p = (id) => document.getElementById(id);
@@ -53,15 +55,36 @@
     if (window.onMasjidChanged) window.onMasjidChanged();
   }
 
+  // The masjid's Ramadan / Eid times: {} when it has none, undefined when offline (keep the saved copy)
+  async function fetchSeason(id) {
+    try {
+      const res = await fetch(SEASON_URL + encodeURIComponent(id), { cache: "no-cache" });
+      let season = {};
+      if (res.status !== 404) {
+        if (!res.ok) return undefined;
+        const doc = await res.json();
+        const parsed = JSON.parse(doc.fields.json.stringValue);
+        if (parsed && typeof parsed === "object") season = parsed;
+      }
+      writeCache("season:" + id, season);
+      return season;
+    } catch (e) { return undefined; }
+  }
+
   // Load one masjid: show the saved copy instantly, then update if the live copy differs.
   async function loadMasjid(id) {
     const file = id + ".json";
     const cached = readCache(file);
-    if (cached && validMasjid(cached)) setMasjid(cached);
-    const fresh = await fetchFresh(file);
+    if (cached && validMasjid(cached)) { cached.season = readCache("season:" + id) || null; setMasjid(cached); }
+    const [fresh, liveSeason] = await Promise.all([fetchFresh(file), fetchSeason(id)]);
+    const season = liveSeason !== undefined ? liveSeason : readCache("season:" + id) || null;
     if (fresh && validMasjid(fresh)) {
+      fresh.season = season;
       if (!MASJID || MASJID.id !== fresh.id || JSON.stringify(MASJID) !== JSON.stringify(fresh)) setMasjid(fresh);
       return true;
+    }
+    if (MASJID && MASJID.id === id && JSON.stringify(MASJID.season) !== JSON.stringify(season)) {
+      MASJID.season = season; setMasjid(MASJID);
     }
     return !!MASJID;
   }

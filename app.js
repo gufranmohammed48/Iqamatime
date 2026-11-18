@@ -29,13 +29,27 @@ function fmt(mins, withAmPm = true) {
   return `${h}:${String(m).padStart(2, "0")}${withAmPm ? " " + ap : ""}`;
 }
 
-// Today's list in order; on Friday, Jumu'ah takes Zuhr's place
+// Today's list in time order; on Friday, Jumu'ah takes Zuhr's place.
+// In Ramadan Taraweeh follows Isha, and on Eid the Eid prayer(s) are added.
 function dayList(t) {
-  return PRAYERS.map((p) =>
+  const list = PRAYERS.map((p) =>
     p.key === "zuhr" && t.isFriday
       ? { key: "jumuah", name: "Jumu'ah", mins: t.jumuah }
       : { key: p.key, name: p.name, mins: t[p.key] }
   );
+  if (t.taraweeh != null) list.push({ key: "taraweeh", name: "Taraweeh", mins: t.taraweeh });
+  if (t.eid) t.eid.times.forEach((mins, i) => list.push({
+    key: "eid", name: t.eid.times.length > 1 ? `${t.eid.name} (${i + 1})` : t.eid.name, mins, place: t.eid.place,
+  }));
+  return list.sort((a, b) => a.mins - b.mins);
+}
+
+function longDate(y, m, d) {
+  return new Date(Date.UTC(y, m - 1, d, 12)).toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", timeZone: "UTC" });
+}
+
+function escHtml(s) {
+  return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
 
 function findNext(now) {
@@ -72,19 +86,31 @@ function renderStatic(now) {
   addrEl.style.display = addr ? "" : "none";
   document.getElementById("footNote").innerHTML = (MASJID.note || "").split("\n").map((l) => l.replace(/&/g, "&amp;").replace(/</g, "&lt;")).join("<br>");
 
-  const base = new Date(Date.UTC(now.y, now.m - 1, now.d, 12));
-  const greg = base.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", timeZone: "UTC" });
-  const hijri = hijriLabel(now.y, now.m, now.d);
+  const greg = longDate(now.y, now.m, now.d);
+  // In Ramadan the masjid's own day count (moon sighting differs between masjids) replaces the calendar's
+  const rDay = ramadanDay(MASJID, now.y, now.m, now.d);
+  const hijri = rDay ? `🌙 Ramadan, day ${rDay}` : hijriLabel(now.y, now.m, now.d);
   // Line 1: Hijri date. Line 2: regular date.
   document.getElementById("dates").innerHTML = hijri
     ? `<div class="hijri">${hijri}</div><div>${greg}</div>` : greg;
+
+  // Eid coming up in the next 10 days: show its prayer times above today's list
+  const eidCard = document.getElementById("eidCard");
+  const up = upcomingEid(MASJID, now.y, now.m, now.d, 10);
+  eidCard.hidden = !up;
+  if (up) {
+    eidCard.innerHTML = `<div class="eid-title">${escHtml(up.eid.name)} prayer</div>
+      <div class="eid-when">${longDate(up.y, up.m, up.d)} · ${up.eid.times.map((x) => fmt(x)).join(" and ")}</div>
+      ${up.eid.place ? `<div class="eid-place">${escHtml(up.eid.place)}</div>` : ""}`;
+  }
 
   // Week table
   let html = "<tr><th>Day</th><th>Fajr</th><th>Zuhr</th><th>Asr</th><th>Magh</th><th>Isha</th></tr>";
   for (let i = 0; i < 7; i++) {
     const d = addDays(now.y, now.m, now.d, i);
     const t = iqamahFor(d.y, d.m, d.d);
-    const label = i === 0 ? "Today" : new Date(Date.UTC(d.y, d.m - 1, d.d)).toLocaleDateString("en-US", { weekday: "short", day: "numeric", timeZone: "UTC" });
+    const label = (i === 0 ? "Today" : new Date(Date.UTC(d.y, d.m - 1, d.d)).toLocaleDateString("en-US", { weekday: "short", day: "numeric", timeZone: "UTC" }))
+      + (t.ramadanDay ? " 🌙" : "") + (t.eid ? " ★" : "");
     const zuhr = t.isFriday ? `${fmt(t.jumuah, false)}<div style="font-size:10px;color:var(--gold)">Jumu'ah</div>` : fmt(t.zuhr, false);
     html += `<tr class="${i === 0 ? "today" : ""} ${t.isFriday ? "fri" : ""}">
       <td>${label}</td><td>${fmt(t.fajr, false)}</td><td>${zuhr}</td>
@@ -98,7 +124,9 @@ function renderToday(now, next) {
   const list = dayList(t);
   let html = list.map((p, i) => {
     const cls = i === next.idx ? "next" : (next.idx === -1 || i < next.idx) ? "past" : "";
-    const sub = p.key === "jumuah" ? '<div class="sub">Friday prayer</div>' : "";
+    const sub = p.key === "jumuah" ? '<div class="sub">Friday prayer</div>'
+      : p.key === "taraweeh" ? '<div class="sub">Ramadan night prayer</div>'
+      : p.key === "eid" ? `<div class="sub">${p.place ? escHtml(p.place) : "Eid prayer"}</div>` : "";
     return `<div class="row ${cls}"><div><div class="name">${p.name}</div>${sub}</div><div class="time">${fmt(p.mins)}</div></div>`;
   }).join("");
   if (!t.isFriday) {
