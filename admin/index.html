@@ -52,7 +52,6 @@
     .times td:first-child { font-weight: 700; width: 90px; }
     .times select { width: 100%; max-width: 230px; }
     .times .val input { width: 140px; }
-    .times .eg { font-size: 12px; color: var(--muted); }
     details { margin-top: 16px; }
     summary { font-weight: 700; cursor: pointer; }
     .tablewrap { overflow-x: auto; margin-top: 10px; border: 1px solid var(--line); border-radius: 12px; }
@@ -112,7 +111,7 @@
 
       <section class="card">
         <h2>🌙 Ramadan</h2>
-        <p class="hint">Times you leave on "Normal schedule" stay the same as the rest of the year.</p>
+        <p class="hint">Times you leave on "Normal time" stay the same as the rest of the year.</p>
 
         <label class="f" for="rStart">First day of Ramadan at your masjid (the first fast)</label>
         <div class="row">
@@ -209,7 +208,7 @@
 
     /* ---------- saved data <-> editing state ---------- */
     function emptyState() {
-      const times = {}; KEYS.forEach((k) => (times[k] = { mode: "normal", at: "", minutes: "" }));
+      const times = {}; KEYS.forEach((k) => (times[k] = { mode: "normal", at: "" }));
       return { start: "", days: 30, times, byDate: {}, eids: [] };
     }
     function stateFromSeason(s) {
@@ -218,9 +217,8 @@
       if (r) {
         st.start = r.start || ""; st.days = r.days === 29 ? 29 : 30;
         KEYS.forEach((k) => {
-          const v = r.times && r.times[k]; if (!v) return;
-          const sun = /^\s*sunset\s*\+\s*(\d+)\s*$/i.exec(v);
-          st.times[k] = sun ? { mode: "sunset", at: "", minutes: sun[1] } : { mode: "fixed", at: textToBox(v), minutes: "" };
+          const at = textToBox(r.times && r.times[k]);
+          if (at) st.times[k] = { mode: "fixed", at };
         });
         st.byDate = JSON.parse(JSON.stringify(r.byDate || {}));
       }
@@ -232,17 +230,12 @@
     }
     function everyDayText(k) {
       const t = state.times[k];
-      if (t.mode === "fixed" && t.at) return boxToText(t.at);
-      if (t.mode === "sunset" && t.minutes !== "" && Number(t.minutes) >= 0) return `sunset+${Number(t.minutes)}`;
-      return "";
+      return t.mode === "fixed" && t.at ? boxToText(t.at) : "";
     }
     // The time the app would show for one prayer on one Ramadan day, before any one-day change
     function defaultMins(k, day) {
       const every = everyDayText(k);
-      if (every) {
-        const sun = /^sunset\+(\d+)$/.exec(every);
-        return sun ? sunsetMinutes(masjid, day.y, day.m, day.d) + Number(sun[1]) : parseTime(every);
-      }
+      if (every) return parseTime(every);
       if (k === "taraweeh") return null;
       const plain = Object.assign({}, masjid, { season: null });
       return iqamahForMasjid(plain, day.y, day.m, day.d)[k];
@@ -273,13 +266,10 @@
         const t = state.times[k];
         return `<tr data-k="${k}"><td>${NAMES[k]}</td>
           <td><select data-f="mode">
-            <option value="normal" ${t.mode === "normal" ? "selected" : ""}>${k === "taraweeh" ? "No Taraweeh time" : "Normal schedule"}</option>
-            <option value="fixed" ${t.mode === "fixed" ? "selected" : ""}>Same time every day</option>
-            <option value="sunset" ${t.mode === "sunset" ? "selected" : ""}>Minutes after sunset</option>
+            <option value="normal" ${t.mode === "normal" ? "selected" : ""}>${k === "taraweeh" ? "No Taraweeh time" : "Normal time"}</option>
+            <option value="fixed" ${t.mode === "fixed" ? "selected" : ""}>Set time for every day</option>
           </select></td>
-          <td class="val">${t.mode === "fixed" ? `<input type="time" data-f="at" value="${t.at}">`
-            : t.mode === "sunset" ? `<input type="number" min="0" max="180" data-f="minutes" value="${t.minutes}" placeholder="min"> <span class="eg">min after sunset</span>`
-            : ""}</td></tr>`;
+          <td class="val">${t.mode === "fixed" ? `<input type="time" data-f="at" value="${t.at}">` : ""}</td></tr>`;
       }).join("");
       renderDayTable();
     }
@@ -338,7 +328,6 @@
       const tr = e.target.closest("tr"); if (!tr) return;
       const t = state.times[tr.dataset.k], f = e.target.dataset.f;
       t[f] = e.target.value;
-      if (f === "mode" && t.mode === "sunset" && t.minutes === "") t.minutes = tr.dataset.k === "maghrib" ? "10" : "";
       markDirty();
       if (f === "mode") renderRamadan(); else renderDayTable();
     });
@@ -380,9 +369,7 @@
       if (!state.start && KEYS.some((k) => everyDayText(k))) out.push("Pick the first day of Ramadan.");
       KEYS.forEach((k) => {
         const t = state.times[k];
-        if (t.mode === "fixed" && !t.at) out.push(`Enter the ${NAMES[k]} time, or set it back to normal.`);
-        if (t.mode === "sunset" && !(t.minutes !== "" && Number(t.minutes) >= 0 && Number(t.minutes) <= 180))
-          out.push(`Enter how many minutes after sunset for ${NAMES[k]} (0 to 180).`);
+        if (t.mode === "fixed" && !t.at) out.push(`Enter the ${NAMES[k]} time, or set it back to Normal time.`);
       });
       state.eids.forEach((e) => {
         if (!e.date) out.push(`Pick the date for ${e.name}.`);
