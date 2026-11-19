@@ -160,9 +160,7 @@
     .week-hint { display: none; margin: -2px 6px 10px; padding: 8px 12px; border-radius: 10px; background: var(--brand); color: #fff; font-size: 13px; text-align: center; }
     .week-hint.show { display: block; }
     .week-card { touch-action: pan-y; user-select: none; -webkit-user-select: none; }
-    .week-card table { transition: transform .18s ease, opacity .18s ease; }
-    .week-card.slide-next table { transform: translateX(-24px); opacity: 0; }
-    .week-card.slide-prev table { transform: translateX(24px); opacity: 0; }
+    .week-card table { will-change: transform; }
     .group { background: var(--card); border-radius: 14px; padding: 14px 16px; margin-top: 14px; }
     .group h3 { font-size: 15px; margin-bottom: 4px; }
     .group p { font-size: 13px; color: var(--muted); margin-bottom: 12px; line-height: 1.4; }
@@ -222,8 +220,8 @@
 
     <div class="install" id="install"></div>
 
-    <button class="section-title week-title" id="weekTitle" type="button" aria-label="Week shown. Swipe the table left or right to see other weeks."></button>
-    <div class="week-hint" id="weekHint" role="status">Swipe left or right on the table to see other weeks</div>
+    <button class="section-title week-title" id="weekTitle" type="button" aria-label="Week shown. Swipe the table right for the next week, left to go back."></button>
+    <div class="week-hint" id="weekHint" role="status">Swipe right to see the next week, left to go back</div>
     <div class="card week-card" id="weekCard">
       <table class="week" id="week"></table>
     </div>

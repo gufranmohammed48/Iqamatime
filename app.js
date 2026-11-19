@@ -133,33 +133,62 @@ function renderWeek(now) {
   document.getElementById("week").innerHTML = html;
 }
 
-function changeWeek(step) {
-  const next = Math.max(0, Math.min(MAX_WEEKS_AHEAD, weekOffset + step));
-  if (next === weekOffset || !MASJID) return;
-  const card = document.getElementById("weekCard");
-  card.classList.add(step > 0 ? "slide-next" : "slide-prev");
-  setTimeout(() => { weekOffset = next; renderWeek(masjidNow()); card.classList.remove("slide-next", "slide-prev"); }, 180);
-}
-
-// Swipe left = next week, swipe right = previous week (works with a finger or a mouse drag)
+// Swipe right = next week, swipe left = back a week. The table follows the finger (or mouse),
+// then slides out while the other week slides in from the opposite side.
 (function () {
-  const card = document.getElementById("weekCard");
-  let x0 = null, y0 = 0;
-  card.addEventListener("pointerdown", (e) => { x0 = e.clientX; y0 = e.clientY; });
-  card.addEventListener("pointerup", (e) => {
-    if (x0 === null) return;
-    const dx = e.clientX - x0, dy = e.clientY - y0; x0 = null;
-    if (Math.abs(dx) > 45 && Math.abs(dx) > Math.abs(dy) * 1.5) changeWeek(dx < 0 ? 1 : -1);
-  });
-  card.addEventListener("pointercancel", () => (x0 = null));
-  // Tapping the title explains how to switch weeks
+  const card = document.getElementById("weekCard"), table = document.getElementById("week");
+  const EASE = "cubic-bezier(.22,.61,.36,1)";
+  let x0 = null, y0 = 0, dx = 0, dragging = false, busy = false;
+  const canGo = (step) => !!MASJID && (step > 0 ? weekOffset < MAX_WEEKS_AHEAD : weekOffset > 0);
+  function setX(x, ms) {
+    table.style.transition = ms ? `transform ${ms}ms ${EASE}, opacity ${ms}ms ${EASE}` : "none";
+    table.style.transform = x ? `translateX(${x}px)` : "";
+    table.style.opacity = String(1 - Math.min(Math.abs(x) / card.offsetWidth, 1) * 0.6);
+  }
+  function slide(step) {
+    const w = card.offsetWidth;
+    busy = true;
+    setX(step > 0 ? w : -w, 200);                      // current week leaves in the swipe direction
+    setTimeout(() => {
+      weekOffset += step;
+      renderWeek(masjidNow());
+      setX(step > 0 ? -w : w, 0);                      // new week starts on the other side...
+      void table.offsetWidth;
+      setX(0, 260);                                    // ...and glides into place
+      setTimeout(() => (busy = false), 260);
+    }, 200);
+  }
+
   let hintTimer = null;
-  document.getElementById("weekTitle").addEventListener("click", () => {
+  function showHint() {
     const hint = document.getElementById("weekHint");
     hint.classList.add("show");
     clearTimeout(hintTimer);
     hintTimer = setTimeout(() => hint.classList.remove("show"), 2500);
+  }
+
+  card.addEventListener("pointerdown", (e) => { if (!busy) { x0 = e.clientX; y0 = e.clientY; dx = 0; dragging = false; } });
+  card.addEventListener("pointermove", (e) => {
+    if (x0 === null) return;
+    const mx = e.clientX - x0, my = e.clientY - y0;
+    if (!dragging) {
+      if (Math.abs(mx) > 8 && Math.abs(mx) > Math.abs(my)) { dragging = true; try { card.setPointerCapture(e.pointerId); } catch (err) {} }
+      else if (Math.abs(my) > 10) { x0 = null; return; } // a vertical scroll, not a swipe
+      else return;
+    }
+    dx = mx;
+    setX(canGo(dx > 0 ? 1 : -1) ? dx : dx / 4, 0);   // stiff pull when there's no week that way
   });
+  card.addEventListener("pointerup", () => {
+    if (x0 === null) return;
+    x0 = null;
+    if (!dragging) { showHint(); return; }           // a tap anywhere on the table
+    const step = dx > 0 ? 1 : -1;
+    if (Math.abs(dx) > Math.min(70, card.offsetWidth * 0.18) && canGo(step)) slide(step);
+    else setX(0, 220);                               // not far enough: spring back
+  });
+  card.addEventListener("pointercancel", () => { if (x0 !== null) { x0 = null; setX(0, 220); } });
+  document.getElementById("weekTitle").addEventListener("click", showHint);
 })();
 
 function renderToday(now, next) {
