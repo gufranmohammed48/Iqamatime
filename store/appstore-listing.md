@@ -11,17 +11,20 @@ Pick your masjid, see today's iqamah times, and get a reminder before every pray
 
 Never miss the congregation prayer. Iqama Time shows today's iqamah times for your masjid, counts down to the next prayer, and reminds you before it is time to leave.
 
-• Choose your masjid from a searchable list
-• Today's iqamah times for Fajr, Zuhr, Asr, Maghrib, Isha and Jumu'ah, plus the next 7 days
+• Choose your masjid from a searchable list, with its address and a map link
+• Today's iqamah times for Fajr, Zuhr, Asr, Maghrib, Isha and Jumu'ah
+• Swipe through the week table to see any week ahead
 • Live countdown to the next iqamah, with the Hijri and regular date
 • Reminders before iqamah: pick 10, 20, 30 or any number of minutes you like
 • Set each prayer to Off, Reminder, or Reminder + Adhan
 • Reminders arrive on time even when the app is closed
+• Ramadan times, Taraweeh and Eid prayers, entered by your own masjid
+• When your masjid changes its times, the app updates by itself
 • Works offline once loaded
 • Light and dark themes
 • No account, no ads, no tracking
 
-Masjid schedules come from each masjid's own posted times. Daylight Saving changes and sunset-based iqamah times (for example "5 minutes after Maghrib adhan") are handled automatically.
+Masjid schedules come from each masjid's own posted times, and masjids can update their times, Ramadan and Eid schedules themselves. Daylight Saving changes and sunset-based iqamah times (for example "5 minutes after Maghrib adhan") are handled automatically.
 
 Want your masjid added? Contact the developer at 104tutorials104@gmail.com.
 
@@ -44,7 +47,7 @@ Want your masjid added? Contact the developer at 104tutorials104@gmail.com.
 No login is needed. On first open, choose a masjid from the list (for example "IMOF Masjid"). Open Settings (gear icon) to set prayer reminders. Reminders are scheduled on the device as local notifications, so they work when the app is closed; allow notifications when asked. "Test my reminder" in Settings sends a sample notification after about 2 seconds. The app has no accounts, ads, in-app purchases or tracking.
 
 ## Screenshots (take on the Mac's Xcode iPhone simulator)
-Required: one set for the 6.9-inch iPhone display (for example iPhone Pro Max simulator, 1320 x 2868). Take 4 to 6: home, masjid list, Settings, prayer options, next 7 days. Use File, Save Screenshot in the simulator.
+Required: one set for the 6.9-inch iPhone display (for example iPhone Pro Max simulator, 1320 x 2868). Take 4 to 6: home, masjid list, Settings, prayer options, the week table. Use File, Save Screenshot in the simulator.
 
 ## Contact for App Review
 Name, phone number and email are asked for in App Store Connect. Use your own phone number there (it is not public).
