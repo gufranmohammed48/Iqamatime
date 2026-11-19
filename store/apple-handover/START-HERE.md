@@ -11,7 +11,8 @@ Iqama Time shows iqamah times for South Florida masjids, counts down to the next
 | `START-HERE.md` | This page: the steps, start to finish |
 | `appstore-listing.md` | All the App Store Connect text to copy and paste (name, subtitle, keywords, description, URLs, review notes, questionnaire answers) |
 | `app-icon-1024.png` | The App Store icon (1024 x 1024). It is also already inside the Xcode project |
-| `android-screenshots/` | Screenshots from the Android version, only to show how the app looks. App Store screenshots must be taken from the iPhone simulator (step 4) |
+| `iphone-screenshots/` | **Ready-to-upload App Store screenshots**, 1320 x 2868 (the 6.9-inch iPhone size Apple asks for): today's times, week table, choosing a masjid, Settings, prayer reminders, dark mode |
+| `android-screenshots/` | Screenshots from the Android version, for reference only |
 
 ## Facts you will need
 
@@ -54,14 +55,14 @@ Click **App** (blue icon at the top left) → target **App** → **Signing & Cap
 Choose an iPhone Pro Max simulator at the top and press **Run** (▶). Check: pick a masjid, the times show, swipe the week table, Settings → "Test my reminder".
 
 ### 4. Screenshots
-With the **iPhone Pro Max** simulator (6.9-inch, 1320 x 2868), press **Cmd+S** to save screenshots. Take 4 to 6: home screen, masjid list, Settings, prayer reminder options, week table.
+Already done: upload the 6 images from `iphone-screenshots/` in App Store Connect (6.9-inch iPhone display). If you prefer your own, use the iPhone Pro Max simulator and press **Cmd+S**.
 
 ### 5. Create the app in App Store Connect
 https://appstoreconnect.apple.com → **My Apps → + → New App**
 - Platform iOS, name **Iqama Time**, language English (U.S.)
 - Bundle ID `com.mohammed.iqamatime`, SKU anything (for example `iqamatime1`)
 
-Then paste everything from **`appstore-listing.md`**: subtitle, promotional text, keywords, description, URLs, category (Lifestyle), age rating (all No → 4+), App Privacy (**Data Not Collected**), review notes. Upload the icon if asked and your screenshots.
+Then paste everything from **`appstore-listing.md`**: subtitle, promotional text, keywords, description, URLs, category (Lifestyle), age rating (all No → 4+), App Privacy (**Data Not Collected**), review notes. Upload the icon if asked and the screenshots from `iphone-screenshots/`.
 
 ### 6. Upload the build
 In Xcode: choose **Any iOS Device (arm64)** at the top → **Product → Archive** → in the Organizer window **Distribute App → App Store Connect → Upload**.
