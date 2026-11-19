@@ -1,0 +1,21 @@
+{
+  "id": "khaleel-davie",
+  "name": "Masjid e Khaleel",
+  "city": "Davie, FL",
+  "address": "5870 SW 64th Ave, Davie, FL 33314",
+  "aka": "Islamic Association of Tri-County",
+  "timeZone": "America/New_York",
+  "lat": 26.0687,
+  "lon": -80.2323,
+  "calc": { "fajrAngle": 15, "ishaAngle": 15, "asr": "hanafi" },
+  "jumuah": "1:30 PM",
+  "note": "Iqamah times change often and are updated by the masjid.",
+  "updated": "2026-11-18",
+  "schedule": {
+    "fajr": { "after": "adhan", "minutes": 20, "round": 5 },
+    "zuhr": { "after": "adhan", "minutes": 30, "round": 15 },
+    "asr": { "after": "adhan", "minutes": 15, "round": 5 },
+    "maghrib": { "after": "sunset", "minutes": 5 },
+    "isha": { "after": "adhan", "minutes": 15, "round": 5 }
+  }
+}

@@ -15,17 +15,22 @@ One entry per prayer: `fajr`, `zuhr`, `asr`, `maghrib`, `isha`. Each is one of:
 |---|---|
 | `"6:35 AM"` | Same time all year |
 | `{"after": "sunset", "minutes": 5}` | 5 minutes after sunset (the adhan) |
+| `{"after": "adhan", "minutes": 15, "round": 5}` | 15 minutes after that prayer's calculated adhan, rounded up to the next 5 minutes (`round` is optional) |
 | `[ rule, rule, ... ]` | Different times on different dates; the first matching rule wins |
 
 A rule is `"at": "6:35 AM"` or `"after": "sunset", "minutes": N`, plus an optional date range:
 `from` / `to` (inclusive), `since` (inclusive), `until` (exclusive). Dates are `"MM-DD"` or `"MM-sun2"`
 (the 2nd Sunday of the month, for daylight saving switches). `jumuah` is a single time.
 
+"After adhan" uses the masjid's `"calc"` settings: `{"fajrAngle": 15, "ishaAngle": 15, "asr": "hanafi"}`
+(ISNA angles and standard Asr when left out). Good for a masjid without a yearly schedule:
+the app follows the sun, and the masjid's admin enters weekly changes on the admin page.
+
 If a masjid sets iqamah some other way, send it to me and we will add a new kind of rule.
 
 ## Ramadan and Eid (masjid admins)
 
-Each masjid enters its own Ramadan start date, Ramadan times, Taraweeh and Eid prayers on the
+Each masjid enters its own schedule changes (any dates, for example a new time each week), its Ramadan start date, Ramadan times, Taraweeh and Eid prayers on the
 admin page: https://gufranmohammed48.github.io/Iqamatime/admin/ . The times are saved in the
 "Iqama Time" Firebase project and the app picks them up the next time it opens. Anything the
 admin leaves on "Normal schedule" keeps the times in this folder.

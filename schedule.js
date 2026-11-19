@@ -7,9 +7,15 @@
    maghrib, isha. Each entry is one of:
      "6:35 AM"                            fixed time all year
      { "after": "sunset", "minutes": 5 }  minutes after sunset (the adhan)
+     { "after": "adhan", "minutes": 15, "round": 5 }
+                                          minutes after that prayer's calculated adhan,
+                                          rounded up to the next 5 minutes ("round" is optional)
      [ rule, rule, ... ]                  different times on different dates
 
-   A rule is a fixed time or an "after sunset" offset, plus an optional
+   "after adhan" uses the masjid's "calc" settings (default: ISNA 15 degrees, standard Asr):
+     "calc": { "fajrAngle": 15, "ishaAngle": 15, "asr": "hanafi" }
+
+   A rule is a fixed time or an "after" offset, plus an optional
    date range (the first rule that matches the date wins):
      from / to   "MM-DD" or "MM-sunN" (Nth Sunday of the month), inclusive
      since       same format, inclusive lower limit  (daylight saving switch)
@@ -76,30 +82,87 @@ function sunsetMinutes(masjid, year, month1, day) {
   return Math.round(p.hour * 60 + p.minute + p.second / 60);
 }
 
-function resolveEntry(entry, masjid, year, month1, day) {
+/* ---- adhan (prayer start) times, the standard "praytimes" method ----
+   Returned as minutes after local midnight at the masjid, for the "after adhan" rule. */
+function adhanTimes(masjid, year, month1, day) {
+  const rad = Math.PI / 180, deg = 180 / Math.PI;
+  const calc = masjid.calc || {};
+  const lat = masjid.lat, lon = masjid.lon;
+  const fajrAngle = calc.fajrAngle || 15, ishaAngle = calc.ishaAngle || 15;
+  const asrFactor = calc.asr === "hanafi" ? 2 : 1;
+  const fix = (a, b) => { a = a - b * Math.floor(a / b); return a < 0 ? a + b : a; };
+  const jDate = Date.UTC(year, month1 - 1, day) / 86400000 + 2440587.5 - lon / (15 * 24);
+  function sun(jd) {
+    const D = jd - 2451545.0;
+    const g = fix(357.529 + 0.98560028 * D, 360), q = fix(280.459 + 0.98564736 * D, 360);
+    const L = fix(q + 1.915 * Math.sin(g * rad) + 0.020 * Math.sin(2 * g * rad), 360);
+    const e = 23.439 - 0.00000036 * D;
+    const RA = Math.atan2(Math.cos(e * rad) * Math.sin(L * rad), Math.cos(L * rad)) * deg / 15;
+    return { decl: Math.asin(Math.sin(e * rad) * Math.sin(L * rad)) * deg, eqt: q / 15 - fix(RA, 24) };
+  }
+  const midDay = (t) => fix(12 - sun(jDate + t).eqt, 24);
+  function angleTime(angle, t, before) {
+    const decl = sun(jDate + t).decl, noon = midDay(t);
+    const c = (-Math.sin(angle * rad) - Math.sin(decl * rad) * Math.sin(lat * rad)) / (Math.cos(decl * rad) * Math.cos(lat * rad));
+    const T = Math.acos(Math.max(-1, Math.min(1, c))) * deg / 15;
+    return noon + (before ? -T : T);
+  }
+  function asrTime(t) {
+    const decl = sun(jDate + t).decl;
+    const angle = -Math.atan(1 / (asrFactor + Math.tan(Math.abs(lat - decl) * rad))) * deg;
+    return angleTime(angle, t);
+  }
+  // two passes: the first guesses each time of day, the second refines with it
+  let h = { fajr: 5, sunrise: 6, zuhr: 12, asr: 13, maghrib: 18, isha: 18 };
+  for (let pass = 0; pass < 2; pass++) {
+    const t = {}; for (const k in h) t[k] = h[k] / 24;
+    h = {
+      fajr: angleTime(fajrAngle, t.fajr, true), sunrise: angleTime(0.833, t.sunrise, true),
+      zuhr: midDay(t.zuhr), asr: asrTime(t.asr), maghrib: angleTime(0.833, t.maghrib), isha: angleTime(ishaAngle, t.isha),
+    };
+  }
+  const out = {};
+  for (const k in h) { // solar hours (UTC at the masjid's longitude) -> wall clock at the masjid
+    const utcMs = Date.UTC(year, month1 - 1, day) + (h[k] - lon / 15) * 3600000;
+    const p = {};
+    new Intl.DateTimeFormat("en-US", { timeZone: masjid.timeZone, hour: "numeric", minute: "numeric", second: "numeric", hourCycle: "h23" })
+      .formatToParts(new Date(utcMs)).forEach((x) => (p[x.type] = Number(x.value)));
+    out[k] = Math.round(p.hour * 60 + p.minute + p.second / 60);
+  }
+  return out;
+}
+
+function resolveEntry(entry, masjid, year, month1, day, prayer) {
   if (typeof entry === "string") return parseTime(entry);
   if (entry.at) return parseTime(entry.at);
-  if (entry.after === "sunset") return sunsetMinutes(masjid, year, month1, day) + (entry.minutes || 0);
-  throw new Error("Rule needs 'at' or 'after'");
+  let mins;
+  if (entry.after === "sunset") mins = sunsetMinutes(masjid, year, month1, day) + (entry.minutes || 0);
+  else if (entry.after === "adhan") mins = adhanTimes(masjid, year, month1, day)[prayer] + (entry.minutes || 0);
+  else throw new Error("Rule needs 'at' or 'after'");
+  return entry.round ? Math.ceil(mins / entry.round) * entry.round : mins;
 }
 
 function minutesFor(masjid, prayer, year, month1, day) {
   const entry = masjid.schedule[prayer];
-  if (!Array.isArray(entry)) return resolveEntry(entry, masjid, year, month1, day);
+  if (!Array.isArray(entry)) return resolveEntry(entry, masjid, year, month1, day, prayer);
   const key = month1 * 100 + day;
   const rule = entry.find((r) => ruleMatches(r, year, key));
   if (!rule) throw new Error(`${masjid.name}: no ${prayer} rule covers ${month1}/${day}`);
-  return resolveEntry(rule, masjid, year, month1, day);
+  return resolveEntry(rule, masjid, year, month1, day, prayer);
 }
 
-/* ---- Ramadan and Eid ----
+/* ---- Schedule changes, Ramadan and Eid ----
    Entered by each masjid's admin on the admin page (admin/) and attached by picker.js
    as masjid.season:
-     { ramadan: { start: "2027-02-08", days: 30,
+     { changes: [ { from: "2026-11-23", to: "2026-11-29",                     to is optional:
+                    times: { fajr, zuhr, asr, maghrib, isha, jumuah } } ],     "until the next change"
+       ramadan: { start: "2027-02-08", days: 30,
                   times:  { fajr, zuhr, asr, maghrib, isha, taraweeh },      for every night
                   byDate: { "2027-02-20": { isha: "8:45 PM" } } },           one-day changes
        eids: [ { name: "Eid al-Fitr", date: "2027-03-10", times: ["8:00 AM", "9:30 AM"], place: "..." } ] }
-   A time is "6:30 AM" or "sunset+10". A blank or missing time keeps the normal schedule. */
+   A time is "6:30 AM" or "sunset+10". A blank or missing time keeps the normal schedule.
+   When several changes cover a date, each prayer comes from the latest-starting change that sets it;
+   Ramadan times win over changes. */
 function isoDate(y, m, d) {
   return `${y}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
 }
@@ -121,10 +184,28 @@ function ramadanDay(masjid, y, m, d) {
   return n >= 1 && n <= (r.days === 29 ? 29 : 30) ? n : 0;
 }
 
+// Times from the schedule changes covering an ISO date. For each prayer, the latest-starting
+// change that sets it wins, so a short change for one prayer leaves the others as they were.
+function changeTimes(season, key) {
+  const out = {}, from = {};
+  for (const c of Array.isArray(season.changes) ? season.changes : []) {
+    if (!c || typeof c.from !== "string" || c.from > key || (c.to && c.to < key) || !c.times) continue;
+    for (const k in c.times) {
+      if (typeof c.times[k] === "string" && c.times[k].trim() && !(from[k] > c.from)) { out[k] = c.times[k]; from[k] = c.from; }
+    }
+  }
+  return out;
+}
+
 function seasonFor(masjid, y, m, d) {
   const season = masjid.season, out = {};
   if (!season) return out;
   const key = isoDate(y, m, d), n = ramadanDay(masjid, y, m, d);
+  const changed = changeTimes(season, key);
+  for (const k of [...PRAYER_KEYS, "jumuah"]) {
+    const v = seasonTime(changed[k], masjid, y, m, d);
+    if (v !== null) out[k] = v;
+  }
   if (n) {
     const r = season.ramadan, oneDay = (r.byDate && r.byDate[key]) || {}, every = r.times || {};
     for (const k of [...PRAYER_KEYS, "taraweeh"]) {
@@ -169,4 +250,4 @@ function iqamahFor(year, month1, day) {
   return iqamahForMasjid(MASJID, year, month1, day);
 }
 
-if (typeof module !== "undefined") module.exports = { iqamahForMasjid, sunsetMinutes, parseTime, nthSunday, ramadanDay, upcomingEid };
+if (typeof module !== "undefined") module.exports = { adhanTimes, iqamahForMasjid, sunsetMinutes, parseTime, nthSunday, ramadanDay, upcomingEid };

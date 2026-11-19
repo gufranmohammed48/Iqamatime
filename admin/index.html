@@ -63,6 +63,8 @@
     table.days input.changed { border-color: var(--gold); background: var(--gold-soft); font-weight: 700; }
     table.days tr.fri td:first-child { color: var(--gold); }
     .eid { border: 1px solid var(--line); border-radius: 12px; padding: 12px; margin-top: 12px; }
+    .change input.changed { border-color: var(--gold); background: var(--gold-soft); font-weight: 700; }
+    .change .normal { display: block; font-size: 11px; color: var(--muted); margin-top: 2px; }
     .eid .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px 10px; }
     .eid .grid label { font-size: 12px; font-weight: 700; display: block; margin-bottom: 3px; }
     .eid .grid input, .eid .grid select { width: 100%; }
@@ -107,6 +109,16 @@
           <button class="btn ghost small" id="signOutBtn">Sign out</button>
         </div>
         <p class="msg" id="lastSaved"></p>
+      </section>
+
+      <section class="card">
+        <h2>📅 Change iqamah times</h2>
+        <p class="hint">Changing times this week or for a few days? Add a change with the dates and only the times that are different. Prayers you leave empty keep their normal time.</p>
+        <div id="changeList"></div>
+        <div class="row" style="margin-top:12px">
+          <button class="btn ghost small" id="addChange" type="button">+ Add a change</button>
+          <button class="btn ghost small" id="copyChange" type="button" hidden>Copy the last change</button>
+        </div>
       </section>
 
       <section class="card">
@@ -182,6 +194,8 @@
     const $ = (id) => document.getElementById(id);
     const KEYS = ["fajr", "zuhr", "asr", "maghrib", "isha", "taraweeh"];
     const NAMES = { fajr: "Fajr", zuhr: "Zuhr", asr: "Asr", maghrib: "Maghrib", isha: "Isha", taraweeh: "Taraweeh" };
+    const CH_KEYS = ["fajr", "zuhr", "asr", "maghrib", "isha", "jumuah"];
+    const CH_NAMES = { fajr: "Fajr", zuhr: "Zuhr", asr: "Asr", maghrib: "Maghrib", isha: "Isha", jumuah: "Jumu'ah" };
 
     let masjid = null;   // the masjid's normal schedule (masjids/<id>.json)
     let state = null;    // what the admin is editing
@@ -209,10 +223,14 @@
     /* ---------- saved data <-> editing state ---------- */
     function emptyState() {
       const times = {}; KEYS.forEach((k) => (times[k] = { mode: "normal", at: "" }));
-      return { start: "", days: 30, times, byDate: {}, eids: [] };
+      return { start: "", days: 30, times, byDate: {}, eids: [], changes: [] };
     }
     function stateFromSeason(s) {
       const st = emptyState();
+      st.changes = (s && Array.isArray(s.changes) ? s.changes : []).map((c) => {
+        const times = {}; CH_KEYS.forEach((k) => (times[k] = textToBox((c.times || {})[k] || "")));
+        return { from: c.from || "", to: c.to || "", times };
+      }).sort((a, b) => (a.from < b.from ? -1 : 1));
       const r = s && s.ramadan;
       if (r) {
         st.start = r.start || ""; st.days = r.days === 29 ? 29 : 30;
@@ -237,12 +255,27 @@
       const every = everyDayText(k);
       if (every) return parseTime(every);
       if (k === "taraweeh") return null;
-      const plain = Object.assign({}, masjid, { season: null });
+      const plain = Object.assign({}, masjid, { season: { changes: savedChanges() } }); // normal times + schedule changes
       return iqamahForMasjid(plain, day.y, day.m, day.d)[k];
+    }
+    // The masjid's own time for a prayer on a date, ignoring everything entered on this page
+    function normalMins(k, key) {
+      const day = addDaysIso(key, 0);
+      const t = iqamahForMasjid(Object.assign({}, masjid, { season: null }), day.y, day.m, day.d);
+      return t[k];
+    }
+    function todayKey() { const d = new Date(); return iso(d.getFullYear(), d.getMonth() + 1, d.getDate()); }
+    // Schedule changes as saved; changes that ended before today are dropped
+    function savedChanges() {
+      const today = todayKey();
+      return state.changes.filter((c) => c.from && !(c.to && c.to < today)).map((c) => {
+        const times = {}; CH_KEYS.forEach((k) => { const v = boxToText(c.times[k]); if (v) times[k] = v; });
+        return c.to ? { from: c.from, to: c.to, times } : { from: c.from, times };
+      }).filter((c) => Object.keys(c.times).length);
     }
     function escapeText(s) { return String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;"); }
     function seasonFromState() {
-      const out = { ramadan: null, eids: [] };
+      const out = { changes: savedChanges(), ramadan: null, eids: [] };
       if (state.start) {
         const times = {}; KEYS.forEach((k) => { const v = everyDayText(k); if (v) times[k] = v; });
         const byDate = {};
@@ -259,6 +292,34 @@
     }
 
     /* ---------- drawing ---------- */
+    function niceDate(key) {
+      const d = addDaysIso(key, 0);
+      return new Date(Date.UTC(d.y, d.m - 1, d.d)).toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", timeZone: "UTC" });
+    }
+    function renderChanges() {
+      const today = todayKey();
+      $("copyChange").hidden = !state.changes.length;
+      $("changeList").innerHTML = state.changes.map((c, i) => {
+        const status = !c.from ? "" : c.to && c.to < today ? "Ended – removed when you save"
+          : c.from > today ? `Starts ${niceDate(c.from)}` : "In effect now";
+        const cells = CH_KEYS.map((k) => {
+          let normal = ""; try { if (c.from) normal = fmtMins(normalMins(k, c.from)); } catch (e) {}
+          return `<div><label>${CH_NAMES[k]}</label><input type="time" data-f="${k}" value="${c.times[k]}" class="${c.times[k] ? "changed" : ""}">
+            <span class="normal">${normal ? `Normal: ${normal}` : ""}</span></div>`;
+        }).join("");
+        return `<div class="eid change" data-i="${i}">
+          <div class="grid">
+            <div><label>From</label><input type="date" data-f="from" value="${c.from}"></div>
+            <div><label>To (optional)</label><input type="date" data-f="to" value="${c.to}"></div>
+          </div>
+          <p class="hint" style="margin:6px 0 10px">${c.to ? "" : "No end date: these times stay until you add another change. "}${status ? `<b>${status}</b>` : ""}</p>
+          <div class="grid">${cells}</div>
+          <button class="link" type="button" data-f="remove" style="margin-top:10px">Remove this change</button>
+        </div>`;
+      }).join("") || `<p class="hint">No changes. The app shows the masjid's normal times.</p>`;
+    }
+    function fmtMins(mins) { return boxToText(minsToBox(mins)); }
+
     function renderRamadan() {
       $("rStart").value = state.start;
       document.querySelectorAll("#rDays button").forEach((b) => b.classList.toggle("on", Number(b.dataset.v) === state.days));
@@ -322,7 +383,7 @@
     });
     $("rClear").addEventListener("click", () => {
       if (!confirm("Remove all Ramadan times for your masjid? (Eid prayers stay.) This happens when you press Save.")) return;
-      const eids = state.eids; state = emptyState(); state.eids = eids; markDirty(); renderRamadan();
+      const { eids, changes } = state; state = emptyState(); state.eids = eids; state.changes = changes; markDirty(); renderRamadan();
     });
     $("rTimes").addEventListener("change", (e) => {
       const tr = e.target.closest("tr"); if (!tr) return;
@@ -342,6 +403,36 @@
       if (!inp.value && def !== null) inp.value = minsToBox(def);
       inp.classList.toggle("changed", !same);
       markDirty();
+    });
+    // A new change starts the day after the last one ends (or today) and runs for a week
+    function nextChangeDates() {
+      const last = state.changes[state.changes.length - 1];
+      const today = todayKey();
+      let from = last && last.to && last.to >= today ? addDaysIso(last.to, 1).key : today;
+      if (last && !last.to && last.from >= today) from = addDaysIso(last.from, 7).key;
+      return { from, to: addDaysIso(from, 6).key };
+    }
+    $("addChange").addEventListener("click", () => {
+      const times = {}; CH_KEYS.forEach((k) => (times[k] = ""));
+      state.changes.push(Object.assign({ times }, nextChangeDates()));
+      markDirty(); renderChanges();
+    });
+    $("copyChange").addEventListener("click", () => {
+      const last = state.changes[state.changes.length - 1]; if (!last) return;
+      state.changes.push(Object.assign({ times: Object.assign({}, last.times) }, nextChangeDates()));
+      markDirty(); renderChanges();
+    });
+    $("changeList").addEventListener("change", (e) => {
+      const box = e.target.closest(".change"), f = e.target.dataset.f; if (!box || !f || f === "remove") return;
+      const c = state.changes[box.dataset.i];
+      if (f === "from" || f === "to") c[f] = e.target.value; else c.times[f] = e.target.value;
+      markDirty();
+      if (f === "from") { state.changes.sort((a, b) => (a.from < b.from ? -1 : 1)); }
+      renderChanges(); renderDayTable();
+    });
+    $("changeList").addEventListener("click", (e) => {
+      if (e.target.dataset.f !== "remove") return;
+      state.changes.splice(Number(e.target.closest(".change").dataset.i), 1); markDirty(); renderChanges(); renderDayTable();
     });
     $("addEid").addEventListener("click", () => {
       const eidName = state.start && state.eids.every((e) => e.name !== "Eid al-Fitr") ? "Eid al-Fitr" : "Eid al-Adha";
@@ -370,6 +461,12 @@
       KEYS.forEach((k) => {
         const t = state.times[k];
         if (t.mode === "fixed" && !t.at) out.push(`Enter the ${NAMES[k]} time, or set it back to Normal time.`);
+      });
+      state.changes.forEach((c) => {
+        const when = c.from ? `the change starting ${niceDate(c.from)}` : "a change";
+        if (!c.from) out.push("Pick the From date for each change.");
+        else if (c.to && c.to < c.from) out.push(`The To date is before the From date in ${when}.`);
+        else if (!CH_KEYS.some((k) => c.times[k])) out.push(`Enter at least one time in ${when}, or remove it.`);
       });
       state.eids.forEach((e) => {
         if (!e.date) out.push(`Pick the date for ${e.name}.`);
@@ -449,7 +546,7 @@
         $("masjidName").textContent = masjid.name;
         $("who").textContent = user.email;
         $("saveMsg").textContent = "";
-        renderRamadan(); renderEids();
+        renderChanges(); renderRamadan(); renderEids();
         show("panel");
       } catch (e) {
         show("login");
