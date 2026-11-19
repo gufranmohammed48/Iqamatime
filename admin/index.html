@@ -122,6 +122,13 @@
       </section>
 
       <section class="card">
+        <h2>🔎 Look up a day</h2>
+        <p class="hint">See exactly what the app will show on any date, including the changes on this page (even before you save).</p>
+        <input type="date" id="lookDate">
+        <div id="lookOut" style="margin-top:10px"></div>
+      </section>
+
+      <section class="card">
         <h2>🌙 Ramadan</h2>
         <p class="hint">Times you leave on "Normal time" stay the same as the rest of the year.</p>
 
@@ -320,6 +327,21 @@
     }
     function fmtMins(mins) { return boxToText(minsToBox(mins)); }
 
+    function renderLookup() {
+      const out = $("lookOut");
+      if (!$("lookDate").value) $("lookDate").value = todayKey();
+      const day = addDaysIso($("lookDate").value, 0);
+      let t;
+      try { t = iqamahForMasjid(Object.assign({}, masjid, { season: seasonFromState() }), day.y, day.m, day.d); }
+      catch (e) { out.innerHTML = `<p class="msg bad">Couldn't work out the times for that date.</p>`; return; }
+      const rows = [["Fajr", t.fajr], day.dow === 5 ? ["Jumu'ah", t.jumuah] : ["Zuhr", t.zuhr], ["Asr", t.asr], ["Maghrib", t.maghrib], ["Isha", t.isha]];
+      if (t.taraweeh != null) rows.push(["Taraweeh", t.taraweeh]);
+      if (t.eid) t.eid.times.forEach((m, i) => rows.push([`${escapeText(t.eid.name)}${t.eid.times.length > 1 ? ` (${i + 1})` : ""}`, m]));
+      out.innerHTML = `<p class="hint" style="margin-bottom:6px"><b>${niceDate(day.key)}</b>${t.ramadanDay ? ` · Ramadan, day ${t.ramadanDay}` : ""}</p>
+        <table class="times">${rows.map(([n, m]) => `<tr><td>${n}</td><td>${fmtMins(m)}</td></tr>`).join("")}</table>`;
+    }
+    $("lookDate").addEventListener("change", renderLookup);
+
     function renderRamadan() {
       $("rStart").value = state.start;
       document.querySelectorAll("#rDays button").forEach((b) => b.classList.toggle("on", Number(b.dataset.v) === state.days));
@@ -373,7 +395,7 @@
       document.querySelectorAll("#eidList .eid").forEach((el) => { el.querySelector('[data-f="place"]').value = state.eids[el.dataset.i].place; });
     }
 
-    function markDirty() { dirty = true; $("saveMsg").className = "msg"; $("saveMsg").textContent = "You have changes that aren't saved yet."; }
+    function markDirty() { dirty = true; $("saveMsg").className = "msg"; $("saveMsg").textContent = "You have changes that aren't saved yet."; setTimeout(renderLookup, 0); }
 
     /* ---------- editing ---------- */
     $("rStart").addEventListener("change", () => { state.start = $("rStart").value; markDirty(); renderDayTable(); });
@@ -546,7 +568,7 @@
         $("masjidName").textContent = masjid.name;
         $("who").textContent = user.email;
         $("saveMsg").textContent = "";
-        renderChanges(); renderRamadan(); renderEids();
+        renderChanges(); renderRamadan(); renderEids(); renderLookup();
         show("panel");
       } catch (e) {
         show("login");

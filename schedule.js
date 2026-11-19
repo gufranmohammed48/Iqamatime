@@ -10,6 +10,9 @@
      { "after": "adhan", "minutes": 15, "round": 5 }
                                           minutes after that prayer's calculated adhan,
                                           rounded up to the next 5 minutes ("round" is optional)
+     { "at": "5:45 AM", "minAfterAdhan": 10, "round": 5 }
+                                          a posted time, but never earlier than 10 minutes after
+                                          the adhan (for masjids that update their board by hand)
      [ rule, rule, ... ]                  different times on different dates
 
    "after adhan" uses the masjid's "calc" settings (default: ISNA 15 degrees, standard Asr):
@@ -134,7 +137,13 @@ function adhanTimes(masjid, year, month1, day) {
 
 function resolveEntry(entry, masjid, year, month1, day, prayer) {
   if (typeof entry === "string") return parseTime(entry);
-  if (entry.at) return parseTime(entry.at);
+  if (entry.at) {
+    const at = parseTime(entry.at);
+    if (entry.minAfterAdhan == null) return at;
+    // a posted time that the season has overtaken: never earlier than N minutes after the adhan
+    const floor = adhanTimes(masjid, year, month1, day)[prayer] + entry.minAfterAdhan;
+    return Math.max(at, entry.round ? Math.ceil(floor / entry.round) * entry.round : floor);
+  }
   let mins;
   if (entry.after === "sunset") mins = sunsetMinutes(masjid, year, month1, day) + (entry.minutes || 0);
   else if (entry.after === "adhan") mins = adhanTimes(masjid, year, month1, day)[prayer] + (entry.minutes || 0);

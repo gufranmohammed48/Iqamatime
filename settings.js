@@ -74,29 +74,8 @@ function renderSettings() {
   $("curCity").textContent = MASJID ? (MASJID.address || MASJID.city || "") : "";
   applyTheme();
   renderStatus();
-  renderLookup();
   lastRemindLine = "";
 }
-
-/* ---------------- look up another day ---------------- */
-function renderLookup() {
-  const head = $("lookupHead"), rows = $("lookupRows"), input = $("lookupDate");
-  if (!MASJID) { head.textContent = ""; rows.innerHTML = ""; return; }
-  if (!input.value) { // start on tomorrow at the masjid
-    const now = masjidNow(), t = addDays(now.y, now.m, now.d, 1);
-    input.value = `${t.y}-${String(t.m).padStart(2, "0")}-${String(t.d).padStart(2, "0")}`;
-  }
-  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(input.value);
-  if (!m) { head.textContent = "Pick a date."; rows.innerHTML = ""; return; }
-  const y = Number(m[1]), mo = Number(m[2]), d = Number(m[3]);
-  let times;
-  try { times = iqamahFor(y, mo, d); } catch (e) { head.textContent = "No times are available for that date."; rows.innerHTML = ""; return; }
-  const greg = new Date(Date.UTC(y, mo - 1, d, 12)).toLocaleDateString("en-US",
-    { weekday: "long", month: "long", day: "numeric", year: "numeric", timeZone: "UTC" });
-  head.innerHTML = `<b>${greg}</b>${times.ramadanDay ? `🌙 Ramadan, day ${times.ramadanDay} at this masjid` : hijriLabel(y, mo, d)}`;
-  rows.innerHTML = dayList(times).map((p) => `<div class="lrow"><span>${p.name}</span><span>${fmt(p.mins)}</span></div>`).join("");
-}
-$("lookupDate").addEventListener("change", renderLookup);
 
 function renderStatus() {
   const el = $("notifStatus");

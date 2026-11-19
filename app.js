@@ -104,9 +104,23 @@ function renderStatic(now) {
       ${up.eid.place ? `<div class="eid-place">${escHtml(up.eid.place)}</div>` : ""}`;
   }
 
-  // Week table
+  renderWeek(now);
+}
+
+// Week table: 7 days starting today + weekOffset weeks (swipe to change weeks)
+let weekOffset = 0;
+const MAX_WEEKS_AHEAD = 52;
+function renderWeek(now) {
+  const first = addDays(now.y, now.m, now.d, weekOffset * 7), last = addDays(now.y, now.m, now.d, weekOffset * 7 + 6);
+  const short = (d, withMonth) => new Date(Date.UTC(d.y, d.m - 1, d.d)).toLocaleDateString("en-US",
+    withMonth ? { month: "short", day: "numeric", timeZone: "UTC" } : { day: "numeric", timeZone: "UTC" });
+  const range = `${short(first, true)} – ${short(last, last.m !== first.m)}`;
+  document.getElementById("weekTitle").innerHTML =
+    `<span>${weekOffset === 0 ? "This week" : "Week"} · ${range}</span><span class="dots" aria-hidden="true">${weekOffset > 0 ? "‹" : ""} ›</span>`;
+
   let html = "<tr><th>Day</th><th>Fajr</th><th>Zuhr</th><th>Asr</th><th>Magh</th><th>Isha</th></tr>";
-  for (let i = 0; i < 7; i++) {
+  for (let j = 0; j < 7; j++) {
+    const i = weekOffset * 7 + j;
     const d = addDays(now.y, now.m, now.d, i);
     const t = iqamahFor(d.y, d.m, d.d);
     const label = (i === 0 ? "Today" : new Date(Date.UTC(d.y, d.m - 1, d.d)).toLocaleDateString("en-US", { weekday: "short", day: "numeric", timeZone: "UTC" }))
@@ -118,6 +132,35 @@ function renderStatic(now) {
   }
   document.getElementById("week").innerHTML = html;
 }
+
+function changeWeek(step) {
+  const next = Math.max(0, Math.min(MAX_WEEKS_AHEAD, weekOffset + step));
+  if (next === weekOffset || !MASJID) return;
+  const card = document.getElementById("weekCard");
+  card.classList.add(step > 0 ? "slide-next" : "slide-prev");
+  setTimeout(() => { weekOffset = next; renderWeek(masjidNow()); card.classList.remove("slide-next", "slide-prev"); }, 180);
+}
+
+// Swipe left = next week, swipe right = previous week (works with a finger or a mouse drag)
+(function () {
+  const card = document.getElementById("weekCard");
+  let x0 = null, y0 = 0;
+  card.addEventListener("pointerdown", (e) => { x0 = e.clientX; y0 = e.clientY; });
+  card.addEventListener("pointerup", (e) => {
+    if (x0 === null) return;
+    const dx = e.clientX - x0, dy = e.clientY - y0; x0 = null;
+    if (Math.abs(dx) > 45 && Math.abs(dx) > Math.abs(dy) * 1.5) changeWeek(dx < 0 ? 1 : -1);
+  });
+  card.addEventListener("pointercancel", () => (x0 = null));
+  // Tapping the title explains how to switch weeks
+  let hintTimer = null;
+  document.getElementById("weekTitle").addEventListener("click", () => {
+    const hint = document.getElementById("weekHint");
+    hint.classList.add("show");
+    clearTimeout(hintTimer);
+    hintTimer = setTimeout(() => hint.classList.remove("show"), 2500);
+  });
+})();
 
 function renderToday(now, next) {
   const t = iqamahFor(now.y, now.m, now.d);

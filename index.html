@@ -155,12 +155,14 @@
     .linkrow span:last-child { font-size: 22px; color: var(--muted); }
     .cur-masjid { font-size: 18px; font-weight: 700; }
     .cur-city { font-size: 13px; color: var(--muted); margin: 2px 0 12px; }
-    .date-input { width: 100%; padding: 12px; font-size: 16px; font-family: inherit; border: 1px solid var(--line); border-radius: 10px; background: var(--bg); color: var(--ink); }
-    .lookup-head { margin: 12px 0 4px; font-size: 13px; color: var(--muted); }
-    .lookup-head b { display: block; font-size: 15px; color: var(--ink); }
-    .lrow { display: flex; justify-content: space-between; padding: 9px 0; border-bottom: 1px solid var(--line); font-size: 15px; }
-    .lrow:last-child { border-bottom: 0; }
-    .lrow span:last-child { font-weight: 700; font-variant-numeric: tabular-nums; }
+    .week-title { display: flex; align-items: center; gap: 8px; width: 100%; background: none; border: 0; font-family: inherit; text-align: left; cursor: pointer; }
+    .week-title .dots { margin-left: auto; letter-spacing: 3px; font-size: 16px; color: var(--muted); opacity: .6; }
+    .week-hint { display: none; margin: -2px 6px 10px; padding: 8px 12px; border-radius: 10px; background: var(--brand); color: #fff; font-size: 13px; text-align: center; }
+    .week-hint.show { display: block; }
+    .week-card { touch-action: pan-y; user-select: none; -webkit-user-select: none; }
+    .week-card table { transition: transform .18s ease, opacity .18s ease; }
+    .week-card.slide-next table { transform: translateX(-24px); opacity: 0; }
+    .week-card.slide-prev table { transform: translateX(24px); opacity: 0; }
     .group { background: var(--card); border-radius: 14px; padding: 14px 16px; margin-top: 14px; }
     .group h3 { font-size: 15px; margin-bottom: 4px; }
     .group p { font-size: 13px; color: var(--muted); margin-bottom: 12px; line-height: 1.4; }
@@ -220,8 +222,9 @@
 
     <div class="install" id="install"></div>
 
-    <div class="section-title">Next 7 days</div>
-    <div class="card">
+    <button class="section-title week-title" id="weekTitle" type="button" aria-label="Week shown. Swipe the table left or right to see other weeks."></button>
+    <div class="week-hint" id="weekHint" role="status">Swipe left or right on the table to see other weeks</div>
+    <div class="card week-card" id="weekCard">
       <table class="week" id="week"></table>
     </div>
 
@@ -251,14 +254,6 @@
         <div class="cur-masjid" id="curMasjid"></div>
         <div class="cur-city" id="curCity"></div>
         <button class="btn" id="changeMasjidBtn">Change masjid</button>
-      </div>
-
-      <div class="sheet-label">Look up another day</div>
-      <div class="group">
-        <p>Pick a date to see that day's iqamah times at your masjid.</p>
-        <input type="date" id="lookupDate" class="date-input" aria-label="Date to look up">
-        <div class="lookup-head" id="lookupHead"></div>
-        <div id="lookupRows"></div>
       </div>
 
       <div class="sheet-label">Reminders</div>

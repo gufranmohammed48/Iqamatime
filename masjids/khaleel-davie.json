@@ -7,15 +7,38 @@
   "timeZone": "America/New_York",
   "lat": 26.0687,
   "lon": -80.2323,
-  "calc": { "fajrAngle": 15, "ishaAngle": 15, "asr": "hanafi" },
+  "calc": {
+    "fajrAngle": 15,
+    "ishaAngle": 15,
+    "asr": "hanafi"
+  },
   "jumuah": "1:30 PM",
-  "note": "Iqamah times change often and are updated by the masjid.",
-  "updated": "2026-11-18",
+  "note": "Iqamah times change often. The masjid updates them here when they change.",
+  "updated": "2026-11-19",
   "schedule": {
-    "fajr": { "after": "adhan", "minutes": 20, "round": 5 },
-    "zuhr": { "after": "adhan", "minutes": 30, "round": 15 },
-    "asr": { "after": "adhan", "minutes": 15, "round": 5 },
-    "maghrib": { "after": "sunset", "minutes": 5 },
-    "isha": { "after": "adhan", "minutes": 15, "round": 5 }
+    "fajr": {
+      "at": "5:45 AM",
+      "minAfterAdhan": 5,
+      "round": 5
+    },
+    "zuhr": {
+      "at": "1:45 PM",
+      "minAfterAdhan": 5,
+      "round": 5
+    },
+    "asr": {
+      "at": "4:15 PM",
+      "minAfterAdhan": 5,
+      "round": 5
+    },
+    "maghrib": {
+      "after": "sunset",
+      "minutes": 5
+    },
+    "isha": {
+      "at": "7:15 PM",
+      "minAfterAdhan": 5,
+      "round": 5
+    }
   }
 }
